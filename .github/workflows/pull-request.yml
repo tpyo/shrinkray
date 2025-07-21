@@ -1,0 +1,54 @@
+name: Pull request
+
+on: pull_request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install clippy
+        run: rustup component add clippy
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install libvips
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libvips libvips-dev
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Create debug build
+        run: cargo build --verbose
+        env:
+          LIB_PATH: /usr/lib/x86_64-linux-gnu/
+
+      - name: Run tests
+        run: cargo test --verbose
+        env:
+          LIB_PATH: /usr/lib/x86_64-linux-gnu/
