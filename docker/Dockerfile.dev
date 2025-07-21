@@ -1,0 +1,12 @@
+FROM public.ecr.aws/g0j7o9w1/shrinkray/base:main
+
+ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
+ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/shrinkray/lib"
+ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so.2"
+ENV PATH="$PATH:/opt/shrinkray/bin"
+
+RUN apt-get -y install cargo rustc --no-install-recommends
+
+RUN cargo install --locked watchexec-cli
+
+WORKDIR /app

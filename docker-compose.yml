@@ -1,0 +1,27 @@
+services:
+  shrinkray:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: "shrinkray"
+    stop_grace_period: 1s
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ./target/docker/shrinkray/:/app/target
+    command: sh -c "watchexec -e rs -r 'cargo run'"
+    ports:
+      - "9090:9090"
+      - "9091:9091"
+    environment:
+      - "SVT_LOG_ALL=-1" # -1 to disable all output, 4 for debug
+      - "VIPS_WARNING=0" # any value to disable warnings
+      #- "VIPS_INFO=1" # any value to enable verbose logging
+      - "RUST_BACKTRACE=full"
+      - "RUST_LOG=debug,watchexec=info,watchexec_cli=info,aws_config=info,aws_runtime=info,aws_sdk_s3=info,hyper=info,aws_smithy_runtime=info,server=trace"
+  jaeger:
+    image: jaegertracing/jaeger:2.7.0
+    environment:
+      - "COLLECTOR_OTLP_ENABLED=true"
+    ports:
+      - "9092:16686"

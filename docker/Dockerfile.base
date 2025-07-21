@@ -1,0 +1,100 @@
+FROM --platform=linux/amd64 rust:1.86.0-slim-bookworm
+
+ARG svt_av1_version=v2.3.0
+ARG rav1e_version=v0.7.1
+ARG libaom_version=v3.12.0
+ARG libheif_version=v1.19.5
+ARG libvips_version=v8.15.5
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
+ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/shrinkray/lib"
+ENV PATH="$PATH:/opt/shrinkray/bin"
+
+RUN apt-get update -qq && \
+    apt-get upgrade -y && \
+    apt-get -y install --no-install-recommends \
+    autoconf \
+    automake \
+    build-essential \
+    cmake \
+    clang \
+    ninja-build \
+    meson \
+    git-core \
+    git \
+    libjemalloc-dev \
+    liborc-dev \
+    libde265-dev \
+    libfreetype6-dev \
+    libfftw3-dev \
+    liblcms2-dev \
+    libx265-dev \
+    libpng-dev \
+    libjpeg62-turbo-dev \
+    librsvg2-dev \
+    libhwy-dev \
+    libtool \
+    libssl-dev \
+    libgirepository1.0-dev \
+    libglib2.0-dev \
+    libexpat1-dev \
+    libexif-dev \
+    libwebp-dev \
+    openssl \
+    texinfo \
+    zlib1g-dev \
+    yasm \
+    nasm \
+    pkg-config \
+    curl \
+    ca-certificates
+
+RUN mkdir -p /opt/shrinkray/lib/pkgconfig
+
+WORKDIR /opt/libaom
+RUN git clone --branch ${libaom_version} --depth 1 https://aomedia.googlesource.com/aom .
+RUN mkdir -p ../aom_build
+WORKDIR /opt/libaom/aom_build
+RUN cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="/opt/shrinkray" -DBUILD_SHARED_LIBS=off -DENABLE_TOOLS=off -DENABLE_DOCS=off -DENABLE_EXAMPLES=off -DENABLE_TESTS=off -DENABLE_NASM=on -DCMAKE_BUILD_TYPE=Release ../
+RUN make -j$(nproc)
+RUN make install
+RUN cp aom.pc /opt/shrinkray/lib/pkgconfig/
+RUN pkg-config aom
+
+RUN mkdir /tmp/rav1e
+WORKDIR /opt/rav1e
+RUN git clone -b ${rav1e_version} --depth 1 https://github.com/xiph/rav1e.git .
+RUN cargo install cargo-c
+RUN cargo cinstall --crt-static --release --prefix="/opt/shrinkray" --library-type=staticlib
+RUN cp target/x86_64-unknown-linux-gnu/release/rav1e.pc /opt/shrinkray/lib/pkgconfig/
+RUN pkg-config rav1e
+
+RUN mkdir -p /opt/SVT-AV1
+WORKDIR /opt/SVT-AV1
+RUN apt install -y nasm
+RUN git clone -b ${svt_av1_version} --depth 1 https://gitlab.com/AOMediaCodec/SVT-AV1.git .
+RUN ./Build/linux/build.sh release static no-apps prefix=/opt/shrinkray install
+RUN cp Build/linux/Release/SvtAv1Enc.pc /opt/shrinkray/lib/pkgconfig/
+RUN pkg-config SvtAv1Enc
+
+WORKDIR /opt/libheif
+RUN git clone --branch ${libheif_version} --depth 1 https://github.com/strukturag/libheif.git .
+RUN cmake -DCMAKE_INSTALL_PREFIX=/opt/shrinkray -DCMAKE_BUILD_TYPE=Release -DWITH_EXAMPLES=0 -DWITH_SvtEnc=1 -DWITH_RAV1E=1
+RUN make -j$(nproc)
+RUN make install
+RUN cp libheif.pc /opt/shrinkray/lib/pkgconfig/
+RUN pkg-config libheif --modversion
+
+RUN export LIBRARY_PATH=/opt/shrinkray/:$LIBRARY_PATH
+
+WORKDIR /opt/libvips
+RUN git clone --branch ${libvips_version} --depth 1 https://github.com/libvips/libvips.git .
+RUN meson setup build-dir --prefix=/opt/shrinkray --buildtype=release --includedir=/opt/shrinkray/include --libdir=/opt/shrinkray/lib
+WORKDIR /opt/libvips/build-dir
+RUN ninja
+RUN ninja install
+
+RUN ldconfig
+
+RUN apt-get -y install cargo rustc --no-install-recommends
