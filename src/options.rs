@@ -466,9 +466,6 @@ pub struct AspectRatio {
     pub y: i32,
 }
 
-// #[derive(Clone, Debug, PartialEq, PartialOrd, Serialize)]
-// pub struct AspectRatio(f64);
-
 impl AspectRatio {
     #[inline]
     fn new(x: i32, y: i32) -> Self {
