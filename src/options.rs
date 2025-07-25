@@ -471,8 +471,8 @@ impl AspectRatio {
     fn new(x: i32, y: i32) -> Self {
         Self {
             ratio: f64::from(x) / f64::from(y),
-            x: x,
-            y: y,
+            x,
+            y,
         }
     }
 }
