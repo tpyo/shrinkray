@@ -460,18 +460,29 @@ pub enum Trim {
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Serialize)]
-pub struct AspectRatio(f64);
+pub struct AspectRatio {
+    pub ratio: f64,
+    pub x: i32,
+    pub y: i32,
+}
+
+// #[derive(Clone, Debug, PartialEq, PartialOrd, Serialize)]
+// pub struct AspectRatio(f64);
 
 impl AspectRatio {
     #[inline]
     fn new(x: i32, y: i32) -> Self {
-        Self(f64::from(x) / f64::from(y))
+        Self {
+            ratio: f64::from(x) / f64::from(y),
+            x: x,
+            y: y,
+        }
     }
 }
 
 impl Display for AspectRatio {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}:{}", self.x, self.y)
     }
 }
 
@@ -481,7 +492,7 @@ impl Div<AspectRatio> for i32 {
     #[allow(clippy::cast_possible_truncation)]
     #[inline]
     fn div(self, aspect_ratio: AspectRatio) -> Self::Output {
-        (f64::from(self) / aspect_ratio.0).round() as i32
+        (f64::from(self) / aspect_ratio.ratio).round() as i32
     }
 }
 
@@ -491,7 +502,7 @@ impl Mul<AspectRatio> for i32 {
     #[allow(clippy::cast_possible_truncation)]
     #[inline]
     fn mul(self, aspect_ratio: AspectRatio) -> Self::Output {
-        (f64::from(self) * aspect_ratio.0).round() as i32
+        (f64::from(self) * aspect_ratio.ratio).round() as i32
     }
 }
 
@@ -572,9 +583,9 @@ where
             let parts: Vec<&str> = value.split(':').collect();
             if parts.len() == 2 {
                 if let (Ok(numerator), Ok(denominator)) =
-                    (parts[0].parse::<f64>(), parts[1].parse::<f64>())
+                    (parts[0].parse::<i32>(), parts[1].parse::<i32>())
                 {
-                    return Ok(Some(AspectRatio(numerator / denominator)));
+                    return Ok(Some(AspectRatio::new(numerator, denominator)));
                 }
             }
             Err(serde::de::Error::custom("invalid aspect ratio"))
@@ -855,7 +866,7 @@ mod tests {
         let query_str = get_image_options().query_str();
         assert_eq!(
             query_str,
-            "ar=1.78&background=ff0000&download=image.jpg&dpr=2&fit=crop&format=jpeg&height=200&kodachrome=50&quality=80&sharpen=50&trim=auto&trim-colour=00ff00&width=300"
+            "ar=16:9&background=ff0000&download=image.jpg&dpr=2&fit=crop&format=jpeg&height=200&kodachrome=50&quality=80&sharpen=50&trim=auto&trim-colour=00ff00&width=300"
         );
     }
 
@@ -866,7 +877,7 @@ mod tests {
 
         assert_eq!(
             signature,
-            "13a80589380db15cd67b85d51211c90a5d9238850acf9345ad2ffd6e4f8d0bda"
+            "210868675de768f0320ad506c85580bf686ab2feec6a35542e93c378e078e28a"
         );
     }
 }
