@@ -27,7 +27,7 @@ opentelemetry = "0.30.0"
 opentelemetry-otlp = { version = "0.30.0", features = ["grpc-tonic"] }
 opentelemetry_sdk = "0.30.0"
 rayon = "1.10.0"
-reqwest = { version = "0.12.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12.15", default-features = false, features = ["json", "rustls-tls"] }
 rexif = "0.7.5"
 ring = "0.17.14"
 rstest = "0.24.0"
