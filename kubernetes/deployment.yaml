@@ -23,7 +23,6 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: shrinkray
-    namespace: default
 roleRef:
   kind: ClusterRole
   name: shrinkray-clusterrole
@@ -42,7 +41,6 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: shrinkray
-    namespace: default
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -51,6 +49,22 @@ metadata:
   labels:
     app: shrinkray
 rules: []
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shrinkray
+  labels:
+    app: shrinkray
+spec:
+  type: NodePort
+  ports:
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: http
+  selector:
+    app: shrinkray
 ---
 apiVersion: apps/v1
 kind: Deployment
