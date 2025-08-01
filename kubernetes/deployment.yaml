@@ -1,0 +1,117 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: shrinkray
+  name: shrinkray
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    app: shrinkray
+  name: shrinkray-clusterrole
+rules: []
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: shrinkray-clusterrolebinding
+  labels:
+    app: shrinkray
+subjects:
+  - kind: ServiceAccount
+    name: shrinkray
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: shrinkray-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: shrinkray
+  labels:
+    app: shrinkray
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: shrinkray
+subjects:
+  - kind: ServiceAccount
+    name: shrinkray
+    namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: shrinkray
+  labels:
+    app: shrinkray
+rules: []
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shrinkray
+  labels:
+    app: shrinkray
+spec:
+  selector:
+    matchLabels:
+      app: shrinkray
+  template:
+    metadata:
+      labels:
+        app: shrinkray
+    spec:
+      volumes:
+        - name: config-file
+          configMap:
+            name: shrinkray
+      containers:
+        - name: shrinkray
+          image: public.ecr.aws/tpyo/shrinkray/server:latest
+          ports:
+            - containerPort: 9090
+              name: shrinkray
+          volumeMounts:
+          - name: config-file
+            mountPath: /opt/shrinkray/etc/config.json
+            subPath: config.json
+          args: ["/opt/shrinkray/etc/config.json"]
+          resources:
+            requests:
+              memory: 2000Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9091
+            initialDelaySeconds: 2
+            timeoutSeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            successThreshold: 1
+            failureThreshold: 5
+            httpGet:
+              path: /healthz
+              port: 9091
+            timeoutSeconds: 2
+            periodSeconds: 2
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsGroup: 65534
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
+---
+
