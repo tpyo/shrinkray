@@ -16,7 +16,7 @@
         },
         {
             "path": "{*path}",
-            "endpoint": "s3://shrinkray-demo/"
+            "endpoint": "s3://bucket-name/"
         }
     ]
 }
