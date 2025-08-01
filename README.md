@@ -1,6 +1,6 @@
-## shrinkray
+# shrinkray
 
-Shrinkray is a lightweight image processing proxy built in Rust.
+Shrinkray is a lightweight, high-performance image proxy written in Rust.
 
 ### Features
 
@@ -9,9 +9,32 @@ Shrinkray is a lightweight image processing proxy built in Rust.
 - Optional HMAC signatures to secure image URLs
 - Prometheus metrics and OpenTelemetry tracing
 
+### Use Cases
+
+- Offload image resizing logic from your app server
+- Serve responsive images without storing multiple variants
+- Optimize external images at request time
+- Use as a backend to a CDN for on-demand image transformation
+
 ### Local Development
 
 Run `docker-compose up` to start a development instance listening on port 9090.
+
+### Kubernetes Deployment
+
+Download and edit the Kubernetes [config file](https://github.com/tpyo/shrinkray/blob/main/kubernetes/config.yaml):
+
+```bash
+curl -O https://github.com/tpyo/shrinkray/blob/main/kubernetes/config.yaml
+```
+
+Apply the Kubernetes manifests:
+
+```bash
+kubectl apply -f config.yaml
+kubectl apply -f https://github.com/tpyo/shrinkray/blob/main/kubernetes/deployment.yaml
+
+```
 
 
 ## Image Options
@@ -47,3 +70,8 @@ Example request:
 ```
 https://img.example.com/photos/dog.jpg?w=800&h=600&fit=crop&fm=webp&q=80&dpr=2&bg=ffffff&ar=16:9&rot=90&lossless=true&sharpen=10&sepia=30&dl=dog.webp&sig=abcd1234
 ```
+
+## Management service
+
+- **http://localhost:9091/metrics** - Prometheus metrics endpoint
+- **http://localhost:9091/healthz** - Health endpoint
