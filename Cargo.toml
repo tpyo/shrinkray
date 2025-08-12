@@ -30,7 +30,7 @@ rayon = "1.10.0"
 reqwest = { version = "0.12.15", default-features = false, features = ["json", "rustls-tls"] }
 rexif = "0.7.5"
 ring = "0.17.14"
-rstest = "0.24.0"
+rstest = "0.26.1"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.142"
 strum = { version = "0.27.2", features = ["derive"] }
