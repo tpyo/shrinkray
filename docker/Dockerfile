@@ -1,4 +1,4 @@
-FROM public.ecr.aws/g0j7o9w1/shrinkray/base:latest AS build
+FROM public.ecr.aws/tpyo/shrinkray/base:latest AS build
 
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
 ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/shrinkray/lib"
