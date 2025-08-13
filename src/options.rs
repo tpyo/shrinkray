@@ -556,9 +556,6 @@ impl From<&mut ImageOptions> for ops::PngsaveBufferOptions {
 #[derive(Display, PartialEq, Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Fit {
-    /// Fits within bounds without cropping or distortion, filling extra space with edge pixels.
-    Clamp,
-
     /// Fits within bounds without cropping or distortion, maintaining aspect ratio.
     Clip,
 
@@ -628,7 +625,7 @@ fn calculate_crop_dimensions(
 }
 
 #[allow(clippy::cast_possible_truncation)]
-fn calculate_clamp_dimensions(
+fn calculate_clip_dimensions(
     image_options: &ImageOptions,
     image_width: i32,
     image_height: i32,
@@ -648,12 +645,9 @@ fn calculate_clamp_dimensions(
         // If both width and height are provided, fit within the bounding box
         (Some(width), Some(height)) => {
             let target_aspect_ratio = AspectRatio::new(width, height);
-
             if target_aspect_ratio > ar {
-                // If the target aspect ratio is wider, fit by height and calculate width
                 (height * ar, height)
             } else {
-                // Otherwise, fit by width and calculate height
                 (width, width / ar)
             }
         }
@@ -705,36 +699,6 @@ fn calculate_max_dimensions(
     }
 }
 
-#[allow(clippy::cast_possible_truncation)]
-fn calculate_clip_dimensions(
-    image_options: &ImageOptions,
-    image_width: i32,
-    image_height: i32,
-    aspect_ratio: Option<AspectRatio>,
-) -> (i32, i32) {
-    let ar = aspect_ratio.unwrap_or(AspectRatio::new(image_width, image_height));
-    match (image_options.width, image_options.height) {
-        // If no constraints are provided, use the original dimensions
-        (None, None) => (image_width, image_height),
-
-        // If only width is provided, calculate the height based on aspect ratio
-        (Some(width), None) => (width, width / ar),
-
-        // If only height is provided, calculate the width based on aspect ratio
-        (None, Some(height)) => (height * ar, height),
-
-        // If both width and height are provided, fit within the bounding box
-        (Some(width), Some(height)) => {
-            let target_aspect_ratio = AspectRatio::new(width, height);
-            if target_aspect_ratio > ar {
-                (height * ar, height)
-            } else {
-                (width, width / ar)
-            }
-        }
-    }
-}
-
 pub fn calculate_dimensions(image_options: &mut ImageOptions, image_width: i32, image_height: i32) {
     let dpr = image_options.device_pixel_ratio.unwrap_or(1);
 
@@ -747,9 +711,6 @@ pub fn calculate_dimensions(image_options: &mut ImageOptions, image_width: i32, 
     let (width, height) = match image_options.fit {
         Some(Fit::Crop) => {
             calculate_crop_dimensions(image_options, image_width, image_height, aspect_ratio)
-        }
-        Some(Fit::Clamp) => {
-            calculate_clamp_dimensions(image_options, image_width, image_height, aspect_ratio)
         }
         Some(Fit::Max) => {
             calculate_max_dimensions(image_options, image_width, image_height, aspect_ratio)
@@ -798,18 +759,6 @@ mod tests {
     #[case::crop_width_and_height_invalid("?w=0&h=0&fit=crop", (600, 400), (600, 400))]
     #[case::crop_width_and_height("?w=300&h=200&fit=crop", (600, 400), (300, 200))]
     #[case::crop_width_and_height("?w=100&h=100&fit=crop", (600, 400), (100, 100))]
-    // Clamp: Width only
-    #[case::clamp_width_only_invalid("?w=0&fit=clamp", (600, 400), (600, 400))]
-    #[case::clamp_width_only("?w=150&fit=clamp", (600, 400), (150, 100))]
-    #[case::clamp_width_only("?w=300&fit=clamp", (600, 400), (300, 200))]
-    // Clamp: Height only
-    #[case::clamp_height_only_invalid("?h=0&fit=clamp", (600, 400), (600, 400))]
-    #[case::clamp_height_only("?h=100&fit=clamp", (600, 400), (150, 100))]
-    #[case::clamp_height_only("?h=200&fit=clamp", (600, 400), (300, 200))]
-    // Clamp: Width and Height
-    #[case::clamp_width_and_height_invalid("?w=0&h=0&fit=clamp", (600, 400), (600, 400))]
-    #[case::clamp_width_and_height("?w=300&h=200&fit=clamp", (600, 400), (300, 200))]
-    #[case::clamp_width_and_height("?w=100&h=100&fit=clamp", (600, 400), (100, 67))]
     // Max: Width only
     #[case::max_width_only_invalid("?w=0&fit=max", (600, 400), (600, 400))]
     #[case::max_width_only("?w=150&fit=max", (600, 400), (150, 100))]

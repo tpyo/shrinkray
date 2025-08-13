@@ -1,4 +1,5 @@
 # shrinkray
+
 [![Release image](https://github.com/tpyo/shrinkray/actions/workflows/tag-image.yml/badge.svg)](https://github.com/tpyo/shrinkray/actions/workflows/tag-image.yml)
 
 Shrinkray is a lightweight, high-performance image proxy written in Rust.
@@ -19,7 +20,7 @@ Shrinkray is a lightweight, high-performance image proxy written in Rust.
 
 ### Local Development
 
-Run `docker-compose up` to start a development instance listening on port 9090.  Jaeger is available at [localhost:16686](http://localhost:16686).
+Run `docker-compose up` to start a development instance listening on port 9090. Jaeger is available at [localhost:16686](http://localhost:16686).
 
 ### Kubernetes Deployment
 
@@ -37,34 +38,32 @@ kubectl apply -f https://github.com/tpyo/shrinkray/blob/main/kubernetes/deployme
 
 ```
 
-
 ## Image Options
 
-
-| Parameter  | Description                                                  |
-| ---------- | ------------------------------------------------------------ |
-| `w`           | Width in pixels                                           |
-| `h`           | Height in pixels                                          |
-| `bg`          | Background colour used when padding or flattening         |
-| `ar`          | Aspect ratio (e.g. `16:9`)                                |
-| `q`           | Output quality (default: 75)                              |
-| `dpr`         | Device pixel ratio multiplier                             |
-| `rot`         | Rotation in degrees (`90`, `180` or `270`)                |
-| `fit`         | Resizing mode (`clip`, `clamp`, `crop`, `max`)            |
-| `fm`          | Output format (`jpeg`, `webp`, `png`, `avif`)             |
-| `dl`          | Download filename for the response                        |
-| `lossless`    | Enable lossless encoding when available                   |
-| `trim`        | Trim borders automatically                                |
-| `trim-colour` | Set the trim colour for the `trim` parameter              |
-| `sharpen`     | Adjust sharpness (0-100)                                  |
-| `blur`        | Apply a blur (0-100)                                      |
-| `kodachrome`  | Filter application (0-100)                                | 
-| `vintage`     | Filter application (0-100)                                | 
-| `polaroid`    | Filter application (0-100)                                | 
-| `technicolor` | Filter application (0-100)                                | 
-| `sepia`       | Filter application (0-100)                                | 
-| `monochrome`  | Filter application (0-100)                                | 
-| `sig`         | HMAC signature used by `sign()` for request verification  |      
+| Parameter     | Description                                              |
+| ------------- | -------------------------------------------------------- |
+| `w`           | Width in pixels                                          |
+| `h`           | Height in pixels                                         |
+| `bg`          | Background colour used when padding or flattening        |
+| `ar`          | Aspect ratio (e.g. `16:9`)                               |
+| `q`           | Output quality (default: 75)                             |
+| `dpr`         | Device pixel ratio multiplier                            |
+| `rot`         | Rotation in degrees (`90`, `180` or `270`)               |
+| `fit`         | Resizing mode (`clip`, `crop`, `max`) (default: `clip`)  |
+| `fm`          | Output format (`jpeg`, `webp`, `png`, `avif`)            |
+| `dl`          | Download filename for the response                       |
+| `lossless`    | Enable lossless encoding when available                  |
+| `trim`        | Trim borders automatically                               |
+| `trim-colour` | Set the trim colour for the `trim` parameter             |
+| `sharpen`     | Adjust sharpness (0-100)                                 |
+| `blur`        | Apply a blur (0-100)                                     |
+| `kodachrome`  | Filter application (0-100)                               |
+| `vintage`     | Filter application (0-100)                               |
+| `polaroid`    | Filter application (0-100)                               |
+| `technicolor` | Filter application (0-100)                               |
+| `sepia`       | Filter application (0-100)                               |
+| `monochrome`  | Filter application (0-100)                               |
+| `sig`         | HMAC signature used by `sign()` for request verification |
 
 Example request:
 
