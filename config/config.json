@@ -11,8 +11,12 @@
     },
     "routing": [
         {
+            "path": "samples/{*path}",
+            "endpoint": "https://shrinkray.photo/samples/"
+        },
+        {
             "path": "files/{*path}",
-            "endpoint": "file:///app/samples/"
+            "endpoint": "file:///app/files/"
         },
         {
             "path": "{*path}",
