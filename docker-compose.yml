@@ -24,4 +24,4 @@ services:
     environment:
       - "COLLECTOR_OTLP_ENABLED=true"
     ports:
-      - "9092:16686"
+      - "16686:16686"
