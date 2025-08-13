@@ -1,4 +1,5 @@
 # shrinkray
+[![Release image](https://github.com/tpyo/shrinkray/actions/workflows/tag-image.yml/badge.svg)](https://github.com/tpyo/shrinkray/actions/workflows/tag-image.yml)
 
 Shrinkray is a lightweight, high-performance image proxy written in Rust.
 
