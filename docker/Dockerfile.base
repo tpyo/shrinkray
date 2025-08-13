@@ -1,10 +1,10 @@
-FROM --platform=linux/amd64 rust:1.86.0-slim-bookworm
+FROM --platform=linux/amd64 rust:1.89.0-slim-bookworm
 
-ARG svt_av1_version=v2.3.0
-ARG rav1e_version=v0.7.1
-ARG libaom_version=v3.12.0
-ARG libheif_version=v1.19.5
-ARG libvips_version=v8.15.5
+ARG svt_av1_version=v3.1.0
+ARG rav1e_version=v0.8.1
+ARG libaom_version=v3.12.1
+ARG libheif_version=v1.20.2
+ARG libvips_version=v8.17.1
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
