@@ -19,7 +19,7 @@ Shrinkray is a lightweight, high-performance image proxy written in Rust.
 
 ### Local Development
 
-Run `docker-compose up` to start a development instance listening on port 9090.
+Run `docker-compose up` to start a development instance listening on port 9090.  Jaeger is available at [localhost:16686](http://localhost:16686).
 
 ### Kubernetes Deployment
 
