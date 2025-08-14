@@ -42,9 +42,6 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["json", "env-filter"] }
 url = "2.5.4"
 
-[lints.clippy]
-enum_glob_use = "deny"
-missing_errors_doc = "allow"
-missing_panics_doc = "allow"
-uninlined_format_args = "allow"
+[workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"

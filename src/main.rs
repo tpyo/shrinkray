@@ -91,10 +91,10 @@ async fn handle_image_request(
 
     let download = options.download.clone();
 
-    if let Some(signing_secret) = &ctx.config.signing_secret {
-        if !options.verify_signature(signing_secret) {
-            return Err(error::Error::InvalidSignature);
-        }
+    if let Some(signing_secret) = &ctx.config.signing_secret
+        && !options.verify_signature(signing_secret)
+    {
+        return Err(error::Error::InvalidSignature);
     }
 
     debug!("processing image: {}", target);
