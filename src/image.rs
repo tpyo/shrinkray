@@ -159,11 +159,11 @@ fn needs_rotation(buffer: &[u8]) -> bool {
     }
 }
 
-fn load(bytes: &[u8], rotate: bool, cx: &TraceContext) -> VipsResult<VipsImage> {
+fn load(bytes: &[u8], random_access: bool, cx: &TraceContext) -> VipsResult<VipsImage> {
     let mut span = tracer("shrinkray").start_with_context("load", cx);
 
     // If rotation is needed, load the image with random access
-    let result = if rotate {
+    let result = if random_access {
         VipsImage::new_from_buffer(bytes, "[access=VIPS_ACCESS_RANDOM]")
     } else {
         VipsImage::new_from_buffer(bytes, "[access=VIPS_ACCESS_SEQUENTIAL]")
@@ -181,8 +181,9 @@ pub fn process_image(
     let tracer = tracer("shrinkray");
 
     let rotation = options.rotate.is_some() || needs_rotation(bytes);
+    let random_access = rotation || options.trim.is_some();
 
-    let mut image = load(bytes, rotation, cx)?;
+    let mut image = load(bytes, random_access, cx)?;
 
     // Rotation
     if rotation {
