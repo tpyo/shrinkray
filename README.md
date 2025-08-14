@@ -1,6 +1,8 @@
 # shrinkray
 
 [![Release image](https://github.com/tpyo/shrinkray/actions/workflows/tag-image.yml/badge.svg)](https://github.com/tpyo/shrinkray/actions/workflows/tag-image.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 
 Shrinkray is a lightweight, high-performance image proxy written in Rust.
 
