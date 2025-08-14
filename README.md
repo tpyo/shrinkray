@@ -18,6 +18,14 @@ Shrinkray is a lightweight, high-performance image proxy written in Rust.
 - Optimize external images at request time
 - Use as a backend to a CDN for on-demand image transformation
 
+### Inspiration
+
+Shrinkray draws inspiration from other great image processing services, including:
+
+- [dali](https://github.com/olxgroup-oss/dali) – a flexible image server  
+- [imgproxy](https://github.com/imgproxy/imgproxy) – a high-performance Golang image proxy  
+- [imgix](https://www.imgix.com) – a commercial image optimization platform  
+
 ## Running shrinkray
 
 ### Kubernetes Deployment
