@@ -18,6 +18,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Rust
+        run: rustup install stable
+
       - name: Install clippy
         run: rustup component add clippy
 
