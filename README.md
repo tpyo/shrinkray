@@ -60,17 +60,19 @@ http://localhost:9090/samples/02.jpg?w=400&h=400&dpr=2&fit=crop
 http://localhost:9090/samples/04.jpg?w=1024&h=768
 - Fits within 1024×768 without cropping
 
+#### Resize to aspect ratio
+http://localhost:9090/samples/03.jpg?ar=4:3&w=400
+- Resizes to 400x300 with cropping
+
 #### Trim whitespace
 http://localhost:9090/samples/trim.jpg?trim=auto
-- Trims whitespace
+- Trim colour can be set with `trim=colour` and `trim-colour=ffffff` 
 
 #### Rotatation
 http://localhost:9090/samples/01.jpg?rot=180
-- Rotates the image 180 degrees
 
 #### Monochrome filter
 http://localhost:9090/samples/08.jpg?monochrome=100
-- Converts the image to black and white
 
 #### Blur
 http://localhost:9090/samples/08.jpg?blur=100
