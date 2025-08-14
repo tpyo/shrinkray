@@ -303,11 +303,11 @@ impl ImageOptions {
     }
 
     pub fn verify_signature(&self, signing_secret: &str) -> bool {
-        if let Some(ref sig_hex) = self.signature {
-            if let Ok(sig_bytes) = hex::decode(sig_hex) {
-                let key = hmac::Key::new(hmac::HMAC_SHA256, signing_secret.as_bytes());
-                return ring::hmac::verify(&key, self.query_str().as_bytes(), &sig_bytes).is_ok();
-            }
+        if let Some(ref sig_hex) = self.signature
+            && let Ok(sig_bytes) = hex::decode(sig_hex)
+        {
+            let key = hmac::Key::new(hmac::HMAC_SHA256, signing_secret.as_bytes());
+            return ring::hmac::verify(&key, self.query_str().as_bytes(), &sig_bytes).is_ok();
         }
         false
     }
@@ -575,12 +575,11 @@ where
         Ok(value) if value.is_empty() => Ok(None),
         Ok(value) => {
             let parts: Vec<&str> = value.split(':').collect();
-            if parts.len() == 2 {
-                if let (Ok(numerator), Ok(denominator)) =
+            if parts.len() == 2
+                && let (Ok(numerator), Ok(denominator)) =
                     (parts[0].parse::<i32>(), parts[1].parse::<i32>())
-                {
-                    return Ok(Some(AspectRatio::new(numerator, denominator)));
-                }
+            {
+                return Ok(Some(AspectRatio::new(numerator, denominator)));
             }
             Err(serde::de::Error::custom("invalid aspect ratio"))
         }
