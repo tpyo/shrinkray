@@ -18,9 +18,7 @@ Shrinkray is a lightweight, high-performance image proxy written in Rust.
 - Optimize external images at request time
 - Use as a backend to a CDN for on-demand image transformation
 
-### Local Development
-
-Run `docker-compose up` to start a development instance listening on port 9090. Jaeger is available at [localhost:16686](http://localhost:16686).
+## Running Shrinkray
 
 ### Kubernetes Deployment
 
@@ -35,10 +33,39 @@ Apply the Kubernetes manifests:
 ```bash
 kubectl apply -f config.yaml
 kubectl apply -f https://github.com/tpyo/shrinkray/blob/main/kubernetes/deployment.yaml
-
 ```
 
-## Image Options
+### Local Development
+
+Run `docker-compose up` to start a development instance listening on http://localhost:9090.
+
+Jaeger tracing is available at http://localhost:16686.
+
+### Example URL parameters
+
+#### Resize with crop fit
+http://localhost:9090/samples/02.jpg?w=400&h=400&dpr=2&fit=crop
+- Resizes to 800×800 at double device pixel ratio (for retina screens)
+- Fits by cropping to fill the dimensions
+
+#### Resize with clip fit
+http://localhost:9090/samples/04.jpg?w=1024&h=768
+- Fits within 1024×768 without cropping
+
+#### Trim whitespace
+http://localhost:9090/samples/trim.jpg?trim=auto
+
+#### Rotatation
+http://localhost:9090/samples/01.jpg?rot=180
+
+#### Monochrome filter
+http://localhost:9090/samples/08.jpg?monochrome=100
+
+#### Blur
+http://localhost:9090/samples/08.jpg?blur=100
+
+
+## Parameters
 
 | Parameter     | Description                                              |
 | ------------- | -------------------------------------------------------- |
@@ -65,13 +92,8 @@ kubectl apply -f https://github.com/tpyo/shrinkray/blob/main/kubernetes/deployme
 | `monochrome`  | Filter application (0-100)                               |
 | `sig`         | HMAC signature used by `sign()` for request verification |
 
-Example request:
-
-```
-https://img.example.com/photos/dog.jpg?w=800&h=600&fit=crop&fm=webp&q=80&dpr=2&bg=ffffff&ar=16:9&rot=90&lossless=true&sharpen=10&sepia=30&dl=dog.webp&sig=abcd1234
-```
 
 ## Management service
 
-- **http://localhost:9091/metrics** - Prometheus metrics endpoint
-- **http://localhost:9091/healthz** - Health endpoint
+- http://localhost:9091/metrics - Prometheus metrics endpoint
+- http://localhost:9091/healthz - Health endpoint
