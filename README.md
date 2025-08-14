@@ -93,7 +93,7 @@ http://localhost:9090/samples/08.jpg?blur=100
 | `fm`          | Output format (`jpeg`, `webp`, `png`, `avif`)            |
 | `dl`          | Download filename for the response                       |
 | `lossless`    | Enable lossless encoding when available                  |
-| `trim`        | Trim borders automatically                               |
+| `trim`        | Trim borders automatically (`auto`, `colour`)            |
 | `trim-colour` | Set the trim colour for the `trim` parameter             |
 | `sharpen`     | Adjust sharpness (0-100)                                 |
 | `blur`        | Apply a blur (0-100)                                     |
