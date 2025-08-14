@@ -18,7 +18,7 @@ Shrinkray is a lightweight, high-performance image proxy written in Rust.
 - Optimize external images at request time
 - Use as a backend to a CDN for on-demand image transformation
 
-## Running Shrinkray
+## Running shrinkray
 
 ### Kubernetes Deployment
 
@@ -54,12 +54,15 @@ http://localhost:9090/samples/04.jpg?w=1024&h=768
 
 #### Trim whitespace
 http://localhost:9090/samples/trim.jpg?trim=auto
+- Trims whitespace
 
 #### Rotatation
 http://localhost:9090/samples/01.jpg?rot=180
+- Rotates the image 180 degrees
 
 #### Monochrome filter
 http://localhost:9090/samples/08.jpg?monochrome=100
+- Converts the image to black and white
 
 #### Blur
 http://localhost:9090/samples/08.jpg?blur=100
