@@ -51,6 +51,9 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha
 
+      - name: Set up Docker buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build docker image
         uses: docker/build-push-action@v6
         with:
@@ -61,4 +64,6 @@ jobs:
             ${{ steps.meta.outputs.tags }}
             public.ecr.aws/${{ env.REGISTRY_ALIAS }}/${{ env.REPOSITORY }}:latest
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           provenance: false
