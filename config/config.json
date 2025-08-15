@@ -1,6 +1,7 @@
 {
     "server_address": "0.0.0.0:9090",
     "management_address": "0.0.0.0:9091",
+    "otel_collector_endpoint": "http://jaeger:4317",
     "read_timeout": 5,
     "log_level": "info",
     "proxies": [],
