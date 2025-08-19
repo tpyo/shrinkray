@@ -195,8 +195,6 @@ async fn main() {
 
     let tracer_provider = otel::setup_tracing(&service.config);
 
-    //global::set_tracer_provider(tracer_provider.clone());
-
     let service_clone = service.clone();
     tokio::spawn(async move {
         run_management_server(&service_clone)
