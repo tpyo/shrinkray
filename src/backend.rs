@@ -3,8 +3,6 @@ use reqwest::{Client, Response, header::HeaderMap};
 use std::path::{Path, PathBuf};
 use url::Url;
 
-use tracing::error;
-
 use crate::config::Config;
 use crate::error::{Error, Result};
 
@@ -27,19 +25,18 @@ async fn get_file_from_http(url: &str, config: &Config) -> Result<Vec<u8>> {
         .timeout(std::time::Duration::from_secs(config.read_timeout))
         .build()?;
     let response = send_request(&client, url, HeaderMap::new()).await?;
-    if response.status() == reqwest::StatusCode::FORBIDDEN {
-        return Err(Error::NotFound);
+
+    if response.status() == reqwest::StatusCode::OK {
+        return Ok(response.bytes().await?.to_vec());
     }
+
     match response.status() {
         reqwest::StatusCode::NOT_FOUND => Err(Error::NotFound),
         reqwest::StatusCode::FORBIDDEN => Err(Error::NotFound),
-        _ => {
-            error!("unexpected response from S3: {}", response.status());
-            Err(Error::Io(format!(
-                "unexpected response from S3: {}",
-                response.status()
-            )))
-        }
+        code => Err(Error::Io(format!(
+            "unexpected response from HTTP backend: {}",
+            code
+        ))),
     }
 }
 
@@ -70,10 +67,10 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
         return match response.status() {
             reqwest::StatusCode::NOT_FOUND => Err(Error::NotFound),
             reqwest::StatusCode::FORBIDDEN => Err(Error::NotFound),
-            code => {
-                error!("unexpected response from S3: {}", code);
-                Err(Error::Io(format!("unexpected response from S3: {}", code)))
-            }
+            code => Err(Error::Io(format!(
+                "unexpected response from S3 backend: {}",
+                code
+            ))),
         };
     }
 
