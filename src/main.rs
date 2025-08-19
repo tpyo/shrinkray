@@ -78,8 +78,6 @@ async fn handle_image_request(
             error!("failed to fetch image from backend: {}", err)
         })?;
 
-    debug!("got image from backend: {}", image.len());
-
     if !options.any_set() {
         // If no options are set, return the original image
         let image = image::Image {
