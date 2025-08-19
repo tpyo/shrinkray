@@ -3,6 +3,8 @@ use reqwest::{Client, Response, header::HeaderMap};
 use std::path::{Path, PathBuf};
 use url::Url;
 
+use tracing::error;
+
 use crate::config::Config;
 use crate::error::{Error, Result};
 
@@ -28,7 +30,17 @@ async fn get_file_from_http(url: &str, config: &Config) -> Result<Vec<u8>> {
     if response.status() == reqwest::StatusCode::FORBIDDEN {
         return Err(Error::NotFound);
     }
-    Ok(response.bytes().await?.to_vec())
+    match response.status() {
+        reqwest::StatusCode::NOT_FOUND => Err(Error::NotFound),
+        reqwest::StatusCode::FORBIDDEN => Err(Error::NotFound),
+        _ => {
+            error!("unexpected response from S3: {}", response.status());
+            Err(Error::Io(format!(
+                "unexpected response from S3: {}",
+                response.status()
+            )))
+        }
+    }
 }
 
 async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<Vec<u8>> {
@@ -44,17 +56,25 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
         let client = Client::builder()
             .timeout(std::time::Duration::from_secs(config.read_timeout))
             .build()?;
-        let resp = send_request(
+        let response = send_request(
             &client,
             &url,
             generate_sigv4_headers(&datetime, &url, config),
         )
         .await?;
-        // 403 typically means the file does not exist
-        if resp.status() == reqwest::StatusCode::FORBIDDEN {
-            return Err(Error::NotFound);
+
+        if response.status() == reqwest::StatusCode::OK {
+            return Ok(response.bytes().await?.to_vec());
         }
-        return Ok(resp.bytes().await?.to_vec());
+
+        return match response.status() {
+            reqwest::StatusCode::NOT_FOUND => Err(Error::NotFound),
+            reqwest::StatusCode::FORBIDDEN => Err(Error::NotFound),
+            code => {
+                error!("unexpected response from S3: {}", code);
+                Err(Error::Io(format!("unexpected response from S3: {}", code)))
+            }
+        };
     }
 
     Err(Error::InvalidBackend)

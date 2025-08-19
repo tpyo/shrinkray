@@ -17,8 +17,7 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
-use opentelemetry::trace::{Span, Status, TraceContextExt, Tracer};
-use opentelemetry::{Context as TraceContext, InstrumentationScope, KeyValue, global};
+use opentelemetry::trace::Status;
 use std::future::ready;
 use std::sync::Arc;
 use tracing::{debug, error};
@@ -66,7 +65,6 @@ async fn handle_image_request(
     _headers: HeaderMap,
     endpoint: String,
     route_path: String,
-    cx: TraceContext,
 ) -> Result<impl IntoResponse> {
     let relative_path = request_path.replacen(&route_path, "", 1);
     let target = format!("{}{}", endpoint, relative_path);
@@ -139,29 +137,8 @@ fn get_router(config: &'static config::Config) -> Router<Arc<Service>> {
                             options: Query<options::ImageOptions>,
                             headers: HeaderMap| {
             async move {
-                let scope = InstrumentationScope::builder("basic")
-                    .with_version("1.0")
-                    .build();
-                let tracer = global::tracer_with_scope(scope.clone());
-
-                let mut span = tracer.start("handle_image_request");
-                span.set_attributes([
-                    KeyValue::new("shrinkray.request_path", request_path.clone()),
-                    KeyValue::new("shrinkray.endpoint", endpoint.clone()),
-                    KeyValue::new("shrinkray.route_path", route_path.clone()),
-                ]);
-                let cx = TraceContext::current_with_span(span);
-
-                handle_image_request(
-                    ctx,
-                    request_path,
-                    options,
-                    headers,
-                    endpoint,
-                    route_path,
-                    cx,
-                )
-                .await
+                handle_image_request(ctx, request_path, options, headers, endpoint, route_path)
+                    .await
             }
         };
 

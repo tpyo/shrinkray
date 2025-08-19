@@ -2,14 +2,6 @@ use crate::config::Config;
 use crate::options::{self, Percentage};
 use libvips::ops;
 use libvips::{Result as VipsResult, VipsImage};
-
-use opentelemetry::Context as TraceContext;
-use opentelemetry::KeyValue;
-use opentelemetry::global::ObjectSafeSpan;
-use opentelemetry::global::tracer;
-use opentelemetry::trace::Span;
-use opentelemetry::trace::Tracer;
-
 use std::mem::discriminant;
 use tracing::error;
 
