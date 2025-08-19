@@ -535,6 +535,7 @@ impl From<&mut ImageOptions> for ops::JpegsaveBufferOptions {
         ops::JpegsaveBufferOptions {
             q: options.quality.unwrap_or(80),
             optimize_coding: false,
+            keep: ops::ForeignKeep::None,
             // Setting interlace to true slows down the encoding process significantly
             interlace: false,
             ..Default::default()

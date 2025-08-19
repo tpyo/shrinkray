@@ -24,11 +24,20 @@ async fn get_file_from_http(url: &str, config: &Config) -> Result<Vec<u8>> {
     let client = Client::builder()
         .timeout(std::time::Duration::from_secs(config.read_timeout))
         .build()?;
-    Ok(send_request(&client, url, HeaderMap::new())
-        .await?
-        .bytes()
-        .await?
-        .to_vec())
+    let response = send_request(&client, url, HeaderMap::new()).await?;
+
+    if response.status() == reqwest::StatusCode::OK {
+        return Ok(response.bytes().await?.to_vec());
+    }
+
+    match response.status() {
+        reqwest::StatusCode::NOT_FOUND => Err(Error::NotFound),
+        reqwest::StatusCode::FORBIDDEN => Err(Error::NotFound),
+        code => Err(Error::Io(format!(
+            "unexpected response from HTTP backend: {}",
+            code
+        ))),
+    }
 }
 
 async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<Vec<u8>> {
@@ -44,22 +53,31 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
         let client = Client::builder()
             .timeout(std::time::Duration::from_secs(config.read_timeout))
             .build()?;
-        let resp = send_request(
+        let response = send_request(
             &client,
             &url,
             generate_sigv4_headers(&datetime, &url, config),
         )
         .await?;
-        // 403 typically means the file does not exist
-        if resp.status() == reqwest::StatusCode::FORBIDDEN {
-            return Err(Error::NotFound);
+
+        if response.status() == reqwest::StatusCode::OK {
+            return Ok(response.bytes().await?.to_vec());
         }
-        return Ok(resp.bytes().await?.to_vec());
+
+        return match response.status() {
+            reqwest::StatusCode::NOT_FOUND => Err(Error::NotFound),
+            reqwest::StatusCode::FORBIDDEN => Err(Error::NotFound),
+            code => Err(Error::Io(format!(
+                "unexpected response from S3 backend: {}",
+                code
+            ))),
+        };
     }
 
     Err(Error::InvalidBackend)
 }
 
+#[tracing::instrument(skip_all, fields(shrinkray.file = url))]
 pub async fn get_file_from_backend(url: &str, config: &Config) -> Result<Vec<u8>> {
     let url = Url::parse(url)?;
     match url.scheme() {
@@ -71,19 +89,13 @@ pub async fn get_file_from_backend(url: &str, config: &Config) -> Result<Vec<u8>
 }
 
 async fn send_request(client: &Client, url: &str, headers: HeaderMap) -> Result<Response> {
-    let res = client
+    client
         .get(url)
         .headers(headers)
         .body("")
         .send()
         .await
-        .map_err(Error::Http);
-
-    if res.is_err() {
-        println!("Error: {:?}", res);
-    }
-
-    res
+        .map_err(Error::Http)
 }
 
 fn generate_sigv4_headers(

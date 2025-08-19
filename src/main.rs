@@ -17,11 +17,11 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
-use opentelemetry::trace::{Span, Status, TraceContextExt, Tracer};
-use opentelemetry::{Context as TraceContext, InstrumentationScope, KeyValue, global};
+use opentelemetry::trace::Status;
 use std::future::ready;
 use std::sync::Arc;
-use tracing::debug;
+use tracing::{debug, error};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use backend::get_file_from_backend;
 use config::read_config;
@@ -57,6 +57,7 @@ fn get_headers(image: &image::Image, download: Option<String>) -> Result<HeaderM
     Ok(headers)
 }
 
+#[tracing::instrument(skip_all)]
 async fn handle_image_request(
     State(ctx): State<Arc<Service>>,
     request_path: String,
@@ -64,21 +65,18 @@ async fn handle_image_request(
     _headers: HeaderMap,
     endpoint: String,
     route_path: String,
-    cx: TraceContext,
 ) -> Result<impl IntoResponse> {
     let relative_path = request_path.replacen(&route_path, "", 1);
     let target = format!("{}{}", endpoint, relative_path);
 
-    debug!("fetching image from backend: {}", target);
-    let mut span = global::tracer("shrinkray").start_with_context("get_file_from_backend", &cx);
     let image = get_file_from_backend(&target, &ctx.config)
         .await
         .inspect_err(|err| {
-            span.set_status(Status::Error {
+            tracing::Span::current().set_status(Status::Error {
                 description: err.to_string().into(),
             });
+            error!("failed to fetch image from backend: {}", err)
         })?;
-    span.end();
 
     if !options.any_set() {
         // If no options are set, return the original image
@@ -99,28 +97,27 @@ async fn handle_image_request(
 
     debug!("processing image: {}", target);
     let (send, recv) = tokio::sync::oneshot::channel();
+
+    let span = tracing::Span::current();
     rayon::spawn(move || {
-        let span = global::tracer("shrinkray").start_with_context("process_image", &cx);
-        let cx = TraceContext::current_with_span(span);
-        let image = image::process_image(&image, &mut options, &ctx.config, &cx)
+        let image = image::process_image(&image, &mut options, &ctx.config, span)
             .map_err(|err| ctx.vips_error(err));
         let _ = send.send(image);
     });
     let image = recv
         .await
         .map_err(|err| {
-            span.set_status(Status::Error {
-                description: err.to_string().into(),
-            });
-            error::Error::Rayon("failed to receive image from processing thread".into())
+            error::Error::Rayon(format!(
+                "failed to receive image from processing thread: {}",
+                err
+            ))
         })?
         .inspect_err(|err| {
-            span.set_status(Status::Error {
+            tracing::Span::current().set_status(Status::Error {
                 description: err.to_string().into(),
             });
         })?;
 
-    span.set_status(Status::Ok);
     Ok((get_headers(&image, download)?, image.bytes))
 }
 
@@ -138,29 +135,8 @@ fn get_router(config: &'static config::Config) -> Router<Arc<Service>> {
                             options: Query<options::ImageOptions>,
                             headers: HeaderMap| {
             async move {
-                let scope = InstrumentationScope::builder("basic")
-                    .with_version("1.0")
-                    .build();
-                let tracer = global::tracer_with_scope(scope.clone());
-
-                let mut span = tracer.start("handle_image_request");
-                span.set_attributes([
-                    KeyValue::new("shrinkray.request_path", request_path.clone()),
-                    KeyValue::new("shrinkray.endpoint", endpoint.clone()),
-                    KeyValue::new("shrinkray.route_path", route_path.clone()),
-                ]);
-                let cx = TraceContext::current_with_span(span);
-
-                handle_image_request(
-                    ctx,
-                    request_path,
-                    options,
-                    headers,
-                    endpoint,
-                    route_path,
-                    cx,
-                )
-                .await
+                handle_image_request(ctx, request_path, options, headers, endpoint, route_path)
+                    .await
             }
         };
 
@@ -209,8 +185,6 @@ async fn run_management_server(
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    otel::setup_logging();
-
     let config = read_config();
     if config.is_err() {
         eprintln!("failed to read configuration: {}", config.unwrap_err());
@@ -220,8 +194,6 @@ async fn main() {
     let service = Arc::new(Service::new(config.unwrap()));
 
     let tracer_provider = otel::setup_tracing(&service.config);
-
-    global::set_tracer_provider(tracer_provider.clone());
 
     let service_clone = service.clone();
     tokio::spawn(async move {

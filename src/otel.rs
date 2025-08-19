@@ -1,10 +1,13 @@
 use crate::config::Config;
+use opentelemetry::trace::TracerProvider as _;
 use opentelemetry_otlp::SpanExporter;
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::Resource;
 use opentelemetry_sdk::trace::SdkTracerProvider;
 use std::sync::OnceLock;
-use tracing_subscriber::EnvFilter;
+use tracing::Level;
+use tracing_opentelemetry::OpenTelemetryLayer;
+use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 fn get_resource() -> Resource {
     static RESOURCE: OnceLock<Resource> = OnceLock::new();
@@ -13,20 +16,7 @@ fn get_resource() -> Resource {
         .clone()
 }
 
-pub fn setup_logging() {
-    let filter = EnvFilter::from_default_env()
-        .add_directive("hyper=off".parse().unwrap())
-        .add_directive("tonic=off".parse().unwrap())
-        .add_directive("h2=off".parse().unwrap())
-        .add_directive("opentelemetry=info".parse().unwrap())
-        .add_directive("reqwest=off".parse().unwrap());
-    tracing_subscriber::fmt()
-        .with_env_filter(filter)
-        .with_thread_names(true)
-        .init();
-}
-
-pub fn setup_tracing(config: &Config) -> SdkTracerProvider {
+pub fn setup_tracing_provider(config: &Config) -> SdkTracerProvider {
     let mut exporter = SpanExporter::builder()
         .with_tonic()
         .with_timeout(std::time::Duration::from_secs(5));
@@ -50,4 +40,32 @@ pub fn setup_tracing(config: &Config) -> SdkTracerProvider {
     }
 
     provider.build()
+}
+
+pub fn setup_tracing(config: &Config) -> SdkTracerProvider {
+    let tracer_provider = setup_tracing_provider(config);
+
+    let tracer = tracer_provider.tracer("shrinkray");
+
+    let env_filter = EnvFilter::from_default_env()
+        .add_directive("hyper=off".parse().unwrap())
+        .add_directive("tonic=off".parse().unwrap())
+        .add_directive("h2=off".parse().unwrap())
+        .add_directive("opentelemetry=info".parse().unwrap())
+        .add_directive("reqwest=off".parse().unwrap());
+
+    let logging_layer = tracing_subscriber::fmt::layer()
+        .with_thread_names(true)
+        .with_filter(env_filter);
+
+    let otel_layer = OpenTelemetryLayer::new(tracer).with_filter(
+        tracing_subscriber::filter::LevelFilter::from_level(Level::INFO),
+    );
+
+    tracing_subscriber::registry()
+        .with(logging_layer)
+        .with(otel_layer)
+        .init();
+
+    tracer_provider
 }
