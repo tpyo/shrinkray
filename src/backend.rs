@@ -24,11 +24,11 @@ async fn get_file_from_http(url: &str, config: &Config) -> Result<Vec<u8>> {
     let client = Client::builder()
         .timeout(std::time::Duration::from_secs(config.read_timeout))
         .build()?;
-    Ok(send_request(&client, url, HeaderMap::new())
-        .await?
-        .bytes()
-        .await?
-        .to_vec())
+    let response = send_request(&client, url, HeaderMap::new()).await?;
+    if response.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(Error::NotFound);
+    }
+    Ok(response.bytes().await?.to_vec())
 }
 
 async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<Vec<u8>> {
@@ -60,6 +60,7 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
     Err(Error::InvalidBackend)
 }
 
+#[tracing::instrument(skip_all, fields(shrinkray.file = url))]
 pub async fn get_file_from_backend(url: &str, config: &Config) -> Result<Vec<u8>> {
     let url = Url::parse(url)?;
     match url.scheme() {
@@ -71,19 +72,13 @@ pub async fn get_file_from_backend(url: &str, config: &Config) -> Result<Vec<u8>
 }
 
 async fn send_request(client: &Client, url: &str, headers: HeaderMap) -> Result<Response> {
-    let res = client
+    client
         .get(url)
         .headers(headers)
         .body("")
         .send()
         .await
-        .map_err(Error::Http);
-
-    if res.is_err() {
-        println!("Error: {:?}", res);
-    }
-
-    res
+        .map_err(Error::Http)
 }
 
 fn generate_sigv4_headers(
