@@ -11,8 +11,8 @@ services:
       - ./target/docker/shrinkray/:/app/target
     command: sh -c "watchexec -e rs -r 'cargo run'"
     ports:
-      - "9090:9090"
-      - "9091:9091"
+      - "9000:9000"
+      - "9001:9001"
     environment:
       - "SVT_LOG_ALL=-1" # -1 to disable all output, 4 for debug
       - "VIPS_WARNING=0" # any value to disable warnings

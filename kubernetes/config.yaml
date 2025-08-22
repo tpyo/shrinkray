@@ -6,8 +6,8 @@ metadata:
 data:
   config.json: |
     {
-      "server_address": "0.0.0.0:9090",
-      "management_address": "0.0.0.0:9091",
+      "server_address": "0.0.0.0:9000",
+      "management_address": "0.0.0.0:9001",
       "read_timeout": 5,
       "log_level": "info",
       "proxies": [],

@@ -62,8 +62,8 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 9090
-      targetPort: 9090
+    - port: 9000
+      targetPort: 9000
       protocol: TCP
       name: http
   selector:
@@ -92,7 +92,7 @@ spec:
         - name: shrinkray
           image: public.ecr.aws/tpyo/shrinkray/server:latest
           ports:
-            - containerPort: 9090
+            - containerPort: 9000
               name: shrinkray
           volumeMounts:
           - name: config-file
@@ -105,7 +105,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 9091
+              port: 9001
             initialDelaySeconds: 2
             timeoutSeconds: 5
             periodSeconds: 5
@@ -114,7 +114,7 @@ spec:
             failureThreshold: 5
             httpGet:
               path: /healthz
-              port: 9091
+              port: 9001
             timeoutSeconds: 2
             periodSeconds: 2
           securityContext:

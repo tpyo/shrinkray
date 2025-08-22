@@ -221,7 +221,7 @@ fn output(
 ) -> VipsResult<Image> {
     let format = options.format.unwrap_or(options::ImageFormat::Jpeg);
 
-    tracing::Span::current().record("shrinkray.image.format", format.to_string());
+    tracing::Span::current().record("shrinkray.format", format.to_string());
 
     match format {
         options::ImageFormat::Jpeg => Ok(Image {

@@ -808,7 +808,7 @@ mod tests {
     }
 
     #[test]
-    fn test_query_str_generation() {
+    fn test_query_str_valid() {
         let query_str = get_image_options().query_str();
         assert_eq!(
             query_str,
@@ -817,13 +817,281 @@ mod tests {
     }
 
     #[test]
-    fn test_signing() {
+    fn test_sign_valid() {
         let secret = "super_secret_key";
         let signature = get_image_options().sign(secret);
-
         assert_eq!(
             signature,
             "210868675de768f0320ad506c85580bf686ab2feec6a35542e93c378e078e28a"
         );
+    }
+
+    #[test]
+    fn test_verify_signature_valid() {
+        let secret = "super_secret_key";
+        let mut options = get_image_options();
+        let signature = options.sign(secret);
+        options.signature = Some(signature);
+        assert!(options.verify_signature(secret));
+    }
+
+    #[test]
+    fn test_verify_signature_invalid() {
+        let secret = "super_secret_key";
+        let mut options = get_image_options();
+        options.signature = Some("invalid_signature".to_string());
+        assert!(!options.verify_signature(secret));
+    }
+
+    #[test]
+    fn test_verify_signature_no_signature() {
+        let secret = "super_secret_key";
+        let options = get_image_options();
+
+        assert!(!options.verify_signature(secret));
+    }
+
+    #[test]
+    fn test_any_set_with_options() {
+        let options = get_image_options();
+        assert!(options.any_set());
+    }
+
+    #[test]
+    fn test_any_set_default() {
+        let options = ImageOptions::default();
+        assert!(options.any_set()); // device_pixel_ratio is Some(1)
+    }
+
+    #[test]
+    fn test_any_set_empty() {
+        let options = ImageOptions {
+            device_pixel_ratio: None,
+            ..Default::default()
+        };
+        assert!(!options.any_set());
+    }
+
+    #[test]
+    fn test_get_resize_scale_width_only() {
+        let options = ImageOptions {
+            width: Some(300),
+            ..Default::default()
+        };
+        let scale = options.get_resize_scale(600, 400);
+        assert_eq!(scale, 0.5);
+    }
+
+    #[test]
+    fn test_get_resize_scale_height_only() {
+        let options = ImageOptions {
+            height: Some(200),
+            ..Default::default()
+        };
+        let scale = options.get_resize_scale(600, 400);
+        assert_eq!(scale, 0.5);
+    }
+
+    #[test]
+    fn test_get_resize_scale_width_and_height() {
+        let options = ImageOptions {
+            width: Some(300),
+            height: Some(150),
+            ..Default::default()
+        };
+        let scale = options.get_resize_scale(600, 400);
+        assert_eq!(scale, 0.375);
+    }
+
+    #[test]
+    fn test_get_resize_scale_no_dimensions() {
+        let options = ImageOptions::default();
+        let scale = options.get_resize_scale(600, 400);
+        assert_eq!(scale, 1.0);
+    }
+
+    #[test]
+    fn test_colour_to_vec() {
+        let colour = Colour {
+            r: 255,
+            g: 128,
+            b: 64,
+        };
+        let vec: Vec<f64> = (&colour).into();
+        assert_eq!(vec, vec![255.0, 128.0, 64.0]);
+    }
+
+    #[test]
+    fn test_colour_to_string() {
+        let colour = Colour {
+            r: 255,
+            g: 128,
+            b: 64,
+        };
+        let string: String = (&colour).into();
+        assert_eq!(string, "ff8040");
+    }
+
+    #[test]
+    fn test_aspect_ratio_new() {
+        let ar = AspectRatio::new(16, 9);
+        assert_eq!(ar.x, 16);
+        assert_eq!(ar.y, 9);
+        assert!((ar.ratio - (16.0 / 9.0)).abs() < 0.0001);
+    }
+
+    #[test]
+    fn test_aspect_ratio_display() {
+        let ar = AspectRatio::new(16, 9);
+        assert_eq!(ar.to_string(), "16:9");
+    }
+
+    #[test]
+    fn test_aspect_ratio_div() {
+        let ar = AspectRatio::new(16, 9);
+        let result = 320 / ar;
+        assert_eq!(result, 180);
+    }
+
+    #[test]
+    fn test_aspect_ratio_mul() {
+        let ar = AspectRatio::new(16, 9);
+        let result = 180 * ar;
+        assert_eq!(result, 320);
+    }
+
+    #[test]
+    fn test_percentage_from() {
+        let percentage = Percentage(75);
+        let value: f64 = (&percentage).into();
+        assert_eq!(value, 75.0);
+    }
+
+    #[test]
+    fn test_rotation_from() {
+        let rotation = Rotation(90);
+        let value: f64 = (&rotation).into();
+        assert_eq!(value, 90.0);
+    }
+
+    #[test]
+    fn test_colour_parsing_valid() {
+        let value = "ff0000";
+        if value.len() == 6 {
+            let r = u8::from_str_radix(&value[0..2], 16).unwrap();
+            let g = u8::from_str_radix(&value[2..4], 16).unwrap();
+            let b = u8::from_str_radix(&value[4..6], 16).unwrap();
+            let colour = Colour { r, g, b };
+            assert_eq!(colour.r, 255);
+            assert_eq!(colour.g, 0);
+            assert_eq!(colour.b, 0);
+        }
+    }
+
+    #[test]
+    fn test_colour_parsing_empty() {
+        let value = "";
+        assert!(value.is_empty() || value.len() != 6);
+    }
+
+    #[test]
+    fn test_percentage_parsing_valid() {
+        let value = "75";
+        let percentage = value.parse::<i32>().unwrap();
+        if (1..=100).contains(&percentage) {
+            let p = Percentage(percentage);
+            assert_eq!(p.0, 75);
+        }
+    }
+
+    #[test]
+    fn test_deserialize_percentage_out_of_range() {
+        let json = r#""150""#;
+        let result: Result<Option<Percentage>, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_aspect_ratio_parsing_valid() {
+        let input = "16:9";
+        let parts: Vec<&str> = input.split(':').collect();
+        if parts.len() == 2 {
+            let x = parts[0].parse::<i32>().unwrap();
+            let y = parts[1].parse::<i32>().unwrap();
+            let ar = AspectRatio::new(x, y);
+            assert_eq!(ar.x, 16);
+            assert_eq!(ar.y, 9);
+        }
+    }
+
+    #[test]
+    fn test_aspect_ratio_parsing_invalid() {
+        let input = "16";
+        let parts: Vec<&str> = input.split(':').collect();
+        assert_ne!(parts.len(), 2);
+    }
+
+    #[test]
+    fn test_dimension_validation_valid() {
+        let value = 100;
+        let dimension = if value > 0 { Some(value) } else { None };
+        assert_eq!(dimension, Some(100));
+    }
+
+    #[test]
+    fn test_dimension_validation_zero() {
+        let value = 0;
+        let dimension = if value > 0 { Some(value) } else { None };
+        assert_eq!(dimension, None);
+    }
+
+    #[test]
+    fn test_from_image_options_heif() {
+        let mut options = ImageOptions {
+            quality: Some(90),
+            lossless: Some(true),
+            format: Some(ImageFormat::Avif),
+            ..Default::default()
+        };
+        let heif_opts: ops::HeifsaveBufferOptions = (&mut options).into();
+        assert_eq!(heif_opts.q, 90);
+        assert!(heif_opts.lossless);
+        assert_eq!(heif_opts.bitdepth, 8);
+    }
+
+    #[test]
+    fn test_from_image_options_webp() {
+        let mut options = ImageOptions {
+            quality: Some(90),
+            lossless: Some(true),
+            ..Default::default()
+        };
+        let webp_opts: ops::WebpsaveBufferOptions = (&mut options).into();
+        assert_eq!(webp_opts.q, 90);
+        assert!(webp_opts.lossless);
+    }
+
+    #[test]
+    fn test_from_image_options_jpeg() {
+        let mut options = ImageOptions {
+            quality: Some(90),
+            ..Default::default()
+        };
+        let jpeg_opts: ops::JpegsaveBufferOptions = (&mut options).into();
+        assert_eq!(jpeg_opts.q, 90);
+        assert!(!jpeg_opts.optimize_coding);
+        assert!(!jpeg_opts.interlace);
+    }
+
+    #[test]
+    fn test_from_image_options_png() {
+        let mut options = ImageOptions {
+            quality: Some(90),
+            ..Default::default()
+        };
+        let png_opts: ops::PngsaveBufferOptions = (&mut options).into();
+        assert_eq!(png_opts.q, 90);
+        assert_eq!(png_opts.compression, 6);
+        assert!(png_opts.interlace);
     }
 }

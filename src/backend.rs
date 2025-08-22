@@ -166,8 +166,8 @@ mod tests {
     fn mock_config() -> config::Config {
         config::Config {
             otel_collector_endpoint: None,
-            server_address: "127.0.0.1:9090".parse().unwrap(),
-            management_address: "127.0.0.1:9091".parse().unwrap(),
+            server_address: "127.0.0.1:9000".parse().unwrap(),
+            management_address: "127.0.0.1:9001".parse().unwrap(),
             read_timeout: 10,
             routing: vec![],
             proxies: vec![],
