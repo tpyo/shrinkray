@@ -39,7 +39,7 @@ tokio = { version = "1.43.1", default-features = false, features = ["full"] }
 tracing = "0.1.41"
 tracing-opentelemetry = "0.31.0"
 tracing-subscriber = { version = "0.3.19", features = ["json", "env-filter"] }
-url = "2.5.4"
+url = "2.5.7"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
