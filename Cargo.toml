@@ -16,7 +16,7 @@ axum = { version = "0.8.1", default-features = false, features = [
     "tracing",
 ] }
 axum-extra = "0.10.1"
-chrono = "0.4.41"
+chrono = "0.4.42"
 hex = "0.4.3"
 ipnet = { version = "2.11.0", features = ["serde"] }
 libvips = "1.7.1"
