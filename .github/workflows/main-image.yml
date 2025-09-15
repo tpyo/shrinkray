@@ -55,9 +55,6 @@ jobs:
           verbose: true
           fail_ci_if_error: true
 
-  build:
-    runs-on: ubuntu-latest
-    steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5
         with:
