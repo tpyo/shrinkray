@@ -424,7 +424,7 @@ pub fn duotone(
     let lut_bytes: Vec<u8> = lut_data.iter().map(|&x| x as u8).collect();
     let lut = VipsImage::new_from_memory(&lut_bytes, 256, 1, 3, ops::BandFormat::Uchar)?;
 
-    // Apply the lookup table to map grayscale values to duotone colors
+    // Apply the lookup table to map grayscale values to duotone colours
     let mut result = ops::maplut(&grayscale, &lut)?;
 
     // Re-attach alpha channel if it was present
