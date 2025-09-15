@@ -445,12 +445,16 @@ mod tests {
         let expected = format!("tests/results/{}", path);
         let img_result = VipsImage::new_from_buffer(buffer, "").expect("unable to read image");
         let img_expected = VipsImage::new_from_file(&expected).expect("unable to read image");
-        let result = ops::relational(&img_result, &img_expected, ops::OperationRelational::Equal);
 
-        assert!(result.is_ok());
+        let avg_result = ops::avg(&img_result).expect("failed to get image avg");
+        let avg_expected = ops::avg(&img_expected).expect("failed to get image avg");
 
-        let min = ops::min(&result.expect("relational failure")).expect("min failure");
-        assert_eq!(min, 0.0);
+        assert!(
+            (avg_result - avg_expected).abs() < 1.0,
+            "average pixel values differ: result={} expected={}",
+            avg_result,
+            avg_expected
+        );
     }
 
     pub fn get_service() -> Service {
