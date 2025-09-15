@@ -16,7 +16,7 @@ env:
   REPOSITORY: shrinkray/server
 
 jobs:
-  tagged-image-build:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
