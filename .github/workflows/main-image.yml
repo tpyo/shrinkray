@@ -17,7 +17,7 @@ env:
   REPOSITORY: shrinkray/server
 
 jobs:
-  tests:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -39,18 +39,11 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Create debug build
-        run: cargo build --verbose
-        env:
-          LIB_PATH: /usr/lib/x86_64-linux-gnu/
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Run tests
-        run: cargo test --verbose
-        env:
-          LIB_PATH: /usr/lib/x86_64-linux-gnu/
-
-      - name: Set up rust-grcov
-        uses: actions-rs/grcov@v0.1
+      - name: Generate code coverage
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
       - name: Codecov
         uses: codecov/codecov-action@v5
@@ -59,14 +52,6 @@ jobs:
         with:
           verbose: true
           fail_ci_if_error: true
-
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5
