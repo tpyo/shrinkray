@@ -1,0 +1,65 @@
+name: Release image
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "README.md"
+      - "docker/Dockerfile.base"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+env:
+  REGISTRY_ALIAS: g0j7o9w1
+  REPOSITORY: shrinkray/server
+
+jobs:
+  tagged-image-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Authenticate with registry
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Add metadata to Docker image
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: public.ecr.aws/${{ env.REGISTRY_ALIAS }}/${{ env.REPOSITORY }}
+          tags: |
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+
+      - name: Set up Docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build docker image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: .
+          file: ./docker/Dockerfile
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            public.ecr.aws/${{ env.REGISTRY_ALIAS }}/${{ env.REPOSITORY }}:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
