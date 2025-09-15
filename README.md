@@ -48,37 +48,37 @@ kubectl apply -f https://github.com/tpyo/shrinkray/blob/main/kubernetes/deployme
 
 ### Local Development
 
-Run `docker-compose up` to start a development instance listening on http://localhost:9090.
+Run `docker-compose up` to start a development instance listening on http://localhost:9000.
 
 Jaeger tracing is available at http://localhost:16686.
 
 ### Example URL parameters
 
 #### Resize with crop fit
-http://localhost:9090/samples/02.jpg?w=400&h=400&dpr=2&fit=crop
+http://localhost:9000/samples/02.jpg?w=400&h=400&dpr=2&fit=crop
 - Resizes to 800×800 at double device pixel ratio (for retina screens)
 - Fits by cropping to fill the dimensions
 
 #### Resize with clip fit
-http://localhost:9090/samples/04.jpg?w=1024&h=768
+http://localhost:9000/samples/04.jpg?w=1024&h=768
 - Fits within 1024×768 without cropping
 
 #### Resize to aspect ratio
-http://localhost:9090/samples/03.jpg?ar=4:3&w=400
+http://localhost:9000/samples/03.jpg?ar=4:3&w=400
 - Resizes to 400x300 with cropping
 
 #### Trim whitespace
-http://localhost:9090/samples/trim.jpg?trim=auto
+http://localhost:9000/samples/trim.jpg?trim=auto
 - Trim colour can be set with `trim=colour` and `trim-colour=ffffff` 
 
 #### Rotatation
-http://localhost:9090/samples/01.jpg?rot=180
+http://localhost:9000/samples/01.jpg?rot=180
 
 #### Monochrome filter
-http://localhost:9090/samples/08.jpg?monochrome=100
+http://localhost:9000/samples/08.jpg?monochrome=100
 
 #### Blur
-http://localhost:9090/samples/08.jpg?blur=100
+http://localhost:9000/samples/08.jpg?blur=100
 
 
 ## Parameters
