@@ -177,8 +177,8 @@ pub fn process_image(
     }
 
     // Duotone
-    if let Some(duotone_colors) = &options.duotone {
-        image = duotone(&image, &duotone_colors.shadow, &duotone_colors.highlight)?;
+    if let Some(duotone_colours) = &options.duotone {
+        image = duotone(&image, &duotone_colours.shadow, &duotone_colours.highlight)?;
     }
 
     // Flatten alpha image
@@ -404,13 +404,13 @@ pub fn duotone(
     }
 
     // Create a lookup table for duotone mapping
-    // Generate 256 values (0-255) mapping shadow to highlight colors
+    // Generate 256 values (0-255) mapping shadow to highlight colours
     let mut lut_data = Vec::with_capacity(256 * 3);
 
     for i in 0..256 {
         let t = i as f64 / 255.0; // Normalize to 0-1
 
-        // Interpolate between shadow and highlight colors
+        // Interpolate between shadow and highlight colours
         let r = (shadow_colour.r as f64 * (1.0 - t) + highlight_colour.r as f64 * t) as u8;
         let g = (shadow_colour.g as f64 * (1.0 - t) + highlight_colour.g as f64 * t) as u8;
         let b = (shadow_colour.b as f64 * (1.0 - t) + highlight_colour.b as f64 * t) as u8;
@@ -480,6 +480,36 @@ mod tests {
             signing_secret: None,
             s3: None,
         }
+    }
+
+    #[test]
+    fn test_find_trim() {
+        let _svc = get_service();
+        let image = load(include_bytes!("../tests/sources/trim.jpg"), false)
+            .expect("unable to load trim.jpg");
+
+        let opts = options::ImageOptions {
+            trim: Some(options::Trim::Auto),
+            ..Default::default()
+        };
+
+        let (left, top, width, height) =
+            find_trim(&image, &opts).expect("find_trim should succeed");
+
+        assert!(left >= 0, "left should be non-negative");
+        assert!(top >= 0, "top should be non-negative");
+        assert!(width > 0, "width should be positive");
+        assert!(height > 0, "height should be positive");
+
+        // Verify trimmed area fits within original image
+        assert!(
+            left + width <= image.get_width(),
+            "trimmed area should fit within image width"
+        );
+        assert!(
+            top + height <= image.get_height(),
+            "trimmed area should fit within image height"
+        );
     }
 
     #[test]
