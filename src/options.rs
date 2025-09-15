@@ -142,6 +142,14 @@ pub struct ImageOptions {
         skip_serializing_if = "Option::is_none"
     )]
     pub monochrome: Option<Percentage>,
+
+    // Duotone filter with colours
+    #[serde(
+        default,
+        deserialize_with = "deserialize_duotone_colours",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub duotone: Option<DuotoneColours>,
 }
 
 impl Default for ImageOptions {
@@ -162,6 +170,7 @@ impl Default for ImageOptions {
             polaroid: None,
             sepia: None,
             monochrome: None,
+            duotone: None,
             width: None,
             height: None,
             device_pixel_ratio: Some(1),
@@ -196,6 +205,7 @@ impl ImageOptions {
             || self.polaroid.is_some()
             || self.sepia.is_some()
             || self.monochrome.is_some()
+            || self.duotone.is_some()
             || self.width.is_some()
             || self.height.is_some()
             || self.device_pixel_ratio.is_some()
@@ -266,6 +276,14 @@ impl ImageOptions {
         }
         if let Some(monochrome) = &self.monochrome {
             params.insert("monochrome".into(), monochrome.0.to_string());
+        }
+        if let Some(duotone) = &self.duotone {
+            let shadow_hex: String = (&duotone.shadow).into();
+            let highlight_hex: String = (&duotone.highlight).into();
+            params.insert(
+                "duotone".into(),
+                format!("{},{}", shadow_hex, highlight_hex),
+            );
         }
         if let Some(width) = self.width {
             params.insert("width".into(), width.to_string());
@@ -377,6 +395,12 @@ pub struct Colour {
     pub b: u8,
 }
 
+#[derive(Debug, Serialize, Clone, Deserialize)]
+pub struct DuotoneColours {
+    pub shadow: Colour,
+    pub highlight: Colour,
+}
+
 impl Default for Colour {
     fn default() -> Self {
         Colour {
@@ -418,6 +442,65 @@ where
 
             let colour = Colour { r, g, b };
             Ok(Some(colour))
+        }
+        Err(err) => Err(err),
+    }
+}
+
+fn deserialize_duotone_colours<'de, D>(deserializer: D) -> Result<Option<DuotoneColours>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let result = String::deserialize(deserializer);
+    match result {
+        Ok(value) => {
+            if value.is_empty() {
+                return Ok(None);
+            }
+
+            let parts: Vec<&str> = value.split(',').collect();
+            if parts.len() != 2 {
+                return Err(serde::de::Error::custom(
+                    "duotone must contain exactly two comma-separated hex colours",
+                ));
+            }
+
+            let shadow_hex = parts[0].trim();
+            let highlight_hex = parts[1].trim();
+
+            if shadow_hex.len() != 6 || highlight_hex.len() != 6 {
+                return Err(serde::de::Error::custom(
+                    "each duotone colour must be exactly 6 hex characters",
+                ));
+            }
+
+            let shadow_r = u8::from_str_radix(&shadow_hex[0..2], 16)
+                .map_err(|_| serde::de::Error::custom("invalid hex format in shadow colour"))?;
+            let shadow_g = u8::from_str_radix(&shadow_hex[2..4], 16)
+                .map_err(|_| serde::de::Error::custom("invalid hex format in shadow colour"))?;
+            let shadow_b = u8::from_str_radix(&shadow_hex[4..6], 16)
+                .map_err(|_| serde::de::Error::custom("invalid hex format in shadow colour"))?;
+
+            let highlight_r = u8::from_str_radix(&highlight_hex[0..2], 16)
+                .map_err(|_| serde::de::Error::custom("invalid hex format in highlight colour"))?;
+            let highlight_g = u8::from_str_radix(&highlight_hex[2..4], 16)
+                .map_err(|_| serde::de::Error::custom("invalid hex format in highlight colour"))?;
+            let highlight_b = u8::from_str_radix(&highlight_hex[4..6], 16)
+                .map_err(|_| serde::de::Error::custom("invalid hex format in highlight colour"))?;
+
+            let duotone_colours = DuotoneColours {
+                shadow: Colour {
+                    r: shadow_r,
+                    g: shadow_g,
+                    b: shadow_b,
+                },
+                highlight: Colour {
+                    r: highlight_r,
+                    g: highlight_g,
+                    b: highlight_b,
+                },
+            };
+            Ok(Some(duotone_colours))
         }
         Err(err) => Err(err),
     }

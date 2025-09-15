@@ -23,7 +23,7 @@ impl Service {
     }
 }
 
-fn create_vips_app() -> &'static VipsApp {
+pub fn create_vips_app() -> &'static VipsApp {
     // libvips requires global initialization and assumes there is only
     // one global VipsApp per process. Creating multiple instances of
     // VipsApp::new(...) in the same test binary (even across different

@@ -3,7 +3,7 @@ use crate::options::{self, Percentage};
 use libvips::ops;
 use libvips::{Result as VipsResult, VipsImage};
 use std::mem::discriminant;
-use tracing::error;
+use tracing::{error, warn};
 
 pub struct Image {
     pub bytes: Vec<u8>,
@@ -12,12 +12,17 @@ pub struct Image {
 
 #[tracing::instrument(skip_all)]
 pub fn flatten(image: &VipsImage, colour: &options::Colour) -> VipsResult<VipsImage> {
-    let opts = ops::FlattenOptions {
-        background: colour.into(),
-        ..Default::default()
-    };
-
-    ops::flatten_with_opts(image, &opts)
+    if image.image_hasalpha() {
+        let opts = ops::FlattenOptions {
+            background: colour.into(),
+            ..Default::default()
+        };
+        ops::flatten_with_opts(image, &opts)
+    } else {
+        // Image does not have an alpha channel, no need to flatten
+        warn!("image does not have an alpha channel, skipping flatten operation");
+        ops::copy(image)
+    }
 }
 
 #[tracing::instrument(skip_all)]
@@ -61,7 +66,7 @@ fn trim(image: &VipsImage, options: &options::ImageOptions) -> VipsResult<VipsIm
         Err(err) => {
             // If the image is not trimmed, return the original image
             error!("unable to trim image: {}", err);
-            Ok(image.clone())
+            ops::copy(image)
         }
     }
 }
@@ -148,6 +153,19 @@ pub fn process_image(
 
     let mut image = load(bytes, random_access)?;
 
+    // Check maximum megapixels limit
+    if let Some(max_megapixels) = config.max_megapixels {
+        let width = image.get_width() as f64;
+        let height = image.get_height() as f64;
+        let megapixels = (width * height) / 1_000_000.0;
+
+        if megapixels > max_megapixels {
+            return Err(libvips::error::Error::OperationError(
+                "image exceeds maximum allowed megapixels",
+            ));
+        }
+    }
+
     // Rotation
     if rotation {
         image = rotate(&image, options)?;
@@ -156,6 +174,11 @@ pub fn process_image(
     // // Trim whitespace
     if options.trim.is_some() {
         image = trim(&image, options)?;
+    }
+
+    // Duotone
+    if let Some(duotone_colors) = &options.duotone {
+        image = duotone(&image, &duotone_colors.shadow, &duotone_colors.highlight)?;
     }
 
     // Flatten alpha image
@@ -170,6 +193,19 @@ pub fn process_image(
 
         // Calculate crop dimensions
         options::calculate_dimensions(options, image_width, image_height);
+
+        // Check maximum output resolution limit before resizing
+        if let Some(max_resolution) = config.max_output_resolution {
+            let output_width = options.width.unwrap_or(image_width) as u32;
+            let output_height = options.height.unwrap_or(image_height) as u32;
+            let max_dimension = output_width.max(output_height);
+
+            if max_dimension > max_resolution {
+                return Err(libvips::error::Error::OperationError(
+                    "output resolution exceeds maximum allowed resolution",
+                ));
+            }
+        }
 
         image = resize(&image, options, image_width, image_height)?;
     }
@@ -344,4 +380,391 @@ fn apply_style(
     };
 
     ops::flatten_with_opts(&overlay, &opts)
+}
+
+#[tracing::instrument(skip_all)]
+pub fn duotone(
+    image: &VipsImage,
+    shadow_colour: &options::Colour,
+    highlight_colour: &options::Colour,
+) -> VipsResult<VipsImage> {
+    // Convert to grayscale
+    let mut grayscale = libvips::ops::colourspace(image, libvips::ops::Interpretation::BW)?;
+
+    // Extract alpha channel if present
+    let alpha = if image.image_hasalpha() {
+        Some(ops::extract_band(&grayscale, grayscale.get_bands() - 1)?)
+    } else {
+        None
+    };
+
+    // Remove alpha from grayscale if present
+    if image.image_hasalpha() {
+        grayscale = ops::extract_band(&grayscale, 0)?;
+    }
+
+    // Create a lookup table for duotone mapping
+    // Generate 256 values (0-255) mapping shadow to highlight colors
+    let mut lut_data = Vec::with_capacity(256 * 3);
+
+    for i in 0..256 {
+        let t = i as f64 / 255.0; // Normalize to 0-1
+
+        // Interpolate between shadow and highlight colors
+        let r = (shadow_colour.r as f64 * (1.0 - t) + highlight_colour.r as f64 * t) as u8;
+        let g = (shadow_colour.g as f64 * (1.0 - t) + highlight_colour.g as f64 * t) as u8;
+        let b = (shadow_colour.b as f64 * (1.0 - t) + highlight_colour.b as f64 * t) as u8;
+
+        lut_data.push(r as f64);
+        lut_data.push(g as f64);
+        lut_data.push(b as f64);
+    }
+
+    // Create the lookup table image
+    let lut_bytes: Vec<u8> = lut_data.iter().map(|&x| x as u8).collect();
+    let lut = VipsImage::new_from_memory(&lut_bytes, 256, 1, 3, ops::BandFormat::Uchar)?;
+
+    // Apply the lookup table to map grayscale values to duotone colors
+    let mut result = ops::maplut(&grayscale, &lut)?;
+
+    // Re-attach alpha channel if it was present
+    if let Some(alpha_channel) = alpha {
+        result = ops::bandjoin(&mut [result, alpha_channel])?;
+    }
+
+    Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::ConfigRouting;
+    use crate::service::Service;
+
+    pub fn assert_result(buffer: &[u8], path: &str) {
+        let expected = format!("tests/results/{}", path);
+        let img_result = VipsImage::new_from_buffer(buffer, "").expect("unable to read image");
+        let img_expected = VipsImage::new_from_file(&expected).expect("unable to read image");
+        let result = ops::relational(&img_result, &img_expected, ops::OperationRelational::Equal);
+
+        assert!(result.is_ok());
+
+        let min = ops::min(&result.expect("relational failure")).expect("min failure");
+        assert_eq!(min, 0.0);
+    }
+
+    pub fn get_service() -> Service {
+        Service {
+            vips_app: crate::service::create_vips_app(),
+            config: get_config(),
+        }
+    }
+
+    pub fn get_config() -> Config {
+        Config {
+            server_address: "0.0.0.0:3000".parse().unwrap(),
+            management_address: "0.0.0.0:3001".parse().unwrap(),
+            max_megapixels: Some(100.0),
+            max_output_resolution: Some(8000),
+            read_timeout: 30,
+            routing: vec![ConfigRouting {
+                path: "{*path}".into(),
+                endpoint: "file://../tests/sources/".into(),
+            }],
+            proxies: vec![],
+            otel_collector_endpoint: None,
+            signing_secret: None,
+            s3: None,
+        }
+    }
+
+    #[test]
+    fn test_trim() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            trim: Some(options::Trim::Auto),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/trim.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "trim.jpg");
+    }
+
+    #[test]
+    fn test_resize() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            width: Some(300),
+            height: Some(200),
+            fit: Some(options::Fit::Crop),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "resize.jpg");
+    }
+
+    #[test]
+    fn test_duotone() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            duotone: Some(options::DuotoneColours {
+                shadow: options::Colour {
+                    r: 0,
+                    g: 50,
+                    b: 100,
+                },
+                highlight: options::Colour {
+                    r: 255,
+                    g: 165,
+                    b: 0,
+                },
+            }),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "duotone.jpg");
+    }
+
+    #[test]
+    fn test_blur() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            blur: Some(options::Percentage(50)),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "blur.jpg");
+    }
+
+    #[test]
+    fn test_sharpen() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            sharpen: Some(options::Percentage(50)),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "sharpen.jpg");
+    }
+
+    #[test]
+    fn test_flatten() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            background: Some(options::Colour {
+                r: 255,
+                g: 0,
+                b: 255,
+            }),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/flatten.png"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "flatten.jpg");
+    }
+
+    #[test]
+    fn test_rotate() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            rotate: Some(options::Rotation(90)),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "rotate.jpg");
+    }
+
+    #[test]
+    fn test_kodachrome() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            kodachrome: Some(options::Percentage(100)),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "kodachrome.jpg");
+    }
+
+    #[test]
+    fn test_polaroid() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            polaroid: Some(options::Percentage(100)),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "polaroid.jpg");
+    }
+
+    #[test]
+    fn test_vintage() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            vintage: Some(options::Percentage(100)),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "vintage.jpg");
+    }
+
+    #[test]
+    fn test_technicolor() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            technicolor: Some(options::Percentage(100)),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "technicolor.jpg");
+    }
+
+    #[test]
+    fn test_monochrome() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            monochrome: Some(options::Percentage(100)),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "monochrome.jpg");
+    }
+
+    #[test]
+    fn test_sepia() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            sepia: Some(options::Percentage(100)),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "sepia.jpg");
+    }
 }

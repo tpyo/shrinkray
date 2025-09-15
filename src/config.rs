@@ -20,6 +20,8 @@ pub struct Config {
     pub s3: Option<S3Config>,
     pub signing_secret: Option<String>,
     pub otel_collector_endpoint: Option<String>,
+    pub max_megapixels: Option<f64>,
+    pub max_output_resolution: Option<u32>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

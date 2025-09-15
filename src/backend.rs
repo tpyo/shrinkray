@@ -171,6 +171,8 @@ mod tests {
             read_timeout: 10,
             routing: vec![],
             proxies: vec![],
+            max_megapixels: Some(50.0),
+            max_output_resolution: Some(8000),
             signing_secret: Some("super_secret_key".to_string()),
             s3: Some(config::S3Config {
                 access_key_id: "test-access-key".to_string(),
