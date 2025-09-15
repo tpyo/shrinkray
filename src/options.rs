@@ -208,7 +208,7 @@ impl ImageOptions {
             || self.duotone.is_some()
             || self.width.is_some()
             || self.height.is_some()
-            || self.device_pixel_ratio.is_some()
+            || (self.device_pixel_ratio.is_some() && self.device_pixel_ratio.unwrap() != 1)
             || self.rotate.is_some()
             || self.fit.is_some()
             || self.format.is_some()
@@ -542,7 +542,7 @@ pub enum Trim {
     Colour,
 }
 
-#[derive(Clone, Debug, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct AspectRatio {
     pub ratio: f64,
     pub x: i32,
@@ -663,6 +663,12 @@ where
                 && let (Ok(numerator), Ok(denominator)) =
                     (parts[0].parse::<i32>(), parts[1].parse::<i32>())
             {
+                if denominator == 0 {
+                    return Err(serde::de::Error::custom("denominator cannot be zero"));
+                }
+                if numerator == 0 {
+                    return Err(serde::de::Error::custom("numerator cannot be zero"));
+                }
                 return Ok(Some(AspectRatio::new(numerator, denominator)));
             }
             Err(serde::de::Error::custom("invalid aspect ratio"))
@@ -930,7 +936,6 @@ mod tests {
     fn test_verify_signature_no_signature() {
         let secret = "super_secret_key";
         let options = get_image_options();
-
         assert!(!options.verify_signature(secret));
     }
 
@@ -943,15 +948,6 @@ mod tests {
     #[test]
     fn test_any_set_default() {
         let options = ImageOptions::default();
-        assert!(options.any_set()); // device_pixel_ratio is Some(1)
-    }
-
-    #[test]
-    fn test_any_set_empty() {
-        let options = ImageOptions {
-            device_pixel_ratio: None,
-            ..Default::default()
-        };
         assert!(!options.any_set());
     }
 
@@ -1016,6 +1012,26 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_colour_valid() {
+        let value = "\"ff0000\"";
+        let mut str = serde_json::Deserializer::from_str(value);
+        let result = deserialize_colour(&mut str);
+        assert!(result.is_ok());
+        let colour = result.unwrap().unwrap();
+        assert_eq!(colour.r, 255);
+        assert_eq!(colour.g, 0);
+        assert_eq!(colour.b, 0);
+    }
+
+    #[test]
+    fn test_deserialize_colour_invalid() {
+        let value = "\"zzzzzz\"";
+        let mut str = serde_json::Deserializer::from_str(value);
+        let result = deserialize_colour(&mut str);
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn test_aspect_ratio_new() {
         let ar = AspectRatio::new(16, 9);
         assert_eq!(ar.x, 16);
@@ -1044,6 +1060,25 @@ mod tests {
     }
 
     #[test]
+    fn test_aspect_ratio_parsing_valid() {
+        let value = "\"16:9\"";
+        let mut str = serde_json::Deserializer::from_str(value);
+        let result = deserialize_aspect_ratio(&mut str);
+        assert!(result.is_ok());
+        let ar = result.unwrap().unwrap();
+        assert_eq!(ar.x, 16);
+        assert_eq!(ar.y, 9);
+    }
+
+    #[test]
+    fn test_aspect_ratio_parsing_invalid() {
+        let value = "\"9:0\"";
+        let mut str = serde_json::Deserializer::from_str(value);
+        let result = deserialize_aspect_ratio(&mut str);
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn test_percentage_from() {
         let percentage = Percentage(75);
         let value: f64 = (&percentage).into();
@@ -1051,81 +1086,33 @@ mod tests {
     }
 
     #[test]
-    fn test_rotation_from() {
-        let rotation = Rotation(90);
-        let value: f64 = (&rotation).into();
-        assert_eq!(value, 90.0);
-    }
-
-    #[test]
-    fn test_colour_parsing_valid() {
-        let value = "ff0000";
-        if value.len() == 6 {
-            let r = u8::from_str_radix(&value[0..2], 16).unwrap();
-            let g = u8::from_str_radix(&value[2..4], 16).unwrap();
-            let b = u8::from_str_radix(&value[4..6], 16).unwrap();
-            let colour = Colour { r, g, b };
-            assert_eq!(colour.r, 255);
-            assert_eq!(colour.g, 0);
-            assert_eq!(colour.b, 0);
-        }
-    }
-
-    #[test]
-    fn test_colour_parsing_empty() {
-        let value = "";
-        assert!(value.is_empty() || value.len() != 6);
-    }
-
-    #[test]
-    fn test_percentage_parsing_valid() {
+    fn test_percentage_parsing_from() {
         let value = "75";
         let percentage = value.parse::<i32>().unwrap();
-        if (1..=100).contains(&percentage) {
-            let p = Percentage(percentage);
-            assert_eq!(p.0, 75);
-        }
+        assert_eq!(percentage, 75);
+    }
+
+    #[test]
+    fn test_deserialize_percentage_valid() {
+        let json = "75";
+        let result: Result<Option<Percentage>, _> = serde_json::from_str(json);
+        assert!(result.is_ok());
+        let percentage = result.unwrap().unwrap();
+        assert_eq!(percentage.0, 75);
     }
 
     #[test]
     fn test_deserialize_percentage_out_of_range() {
-        let json = r#""150""#;
+        let json = "\"150\"";
         let result: Result<Option<Percentage>, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_aspect_ratio_parsing_valid() {
-        let input = "16:9";
-        let parts: Vec<&str> = input.split(':').collect();
-        if parts.len() == 2 {
-            let x = parts[0].parse::<i32>().unwrap();
-            let y = parts[1].parse::<i32>().unwrap();
-            let ar = AspectRatio::new(x, y);
-            assert_eq!(ar.x, 16);
-            assert_eq!(ar.y, 9);
-        }
-    }
-
-    #[test]
-    fn test_aspect_ratio_parsing_invalid() {
-        let input = "16";
-        let parts: Vec<&str> = input.split(':').collect();
-        assert_ne!(parts.len(), 2);
-    }
-
-    #[test]
-    fn test_dimension_validation_valid() {
-        let value = 100;
-        let dimension = if value > 0 { Some(value) } else { None };
-        assert_eq!(dimension, Some(100));
-    }
-
-    #[test]
-    fn test_dimension_validation_zero() {
-        let value = 0;
-        let dimension = if value > 0 { Some(value) } else { None };
-        assert_eq!(dimension, None);
+    fn test_rotation_from() {
+        let rotation = Rotation(90);
+        let value: f64 = (&rotation).into();
+        assert_eq!(value, 90.0);
     }
 
     #[test]
