@@ -111,5 +111,5 @@ http://localhost:9000/samples/08.jpg?blur=100
 
 ## Management service
 
-- http://localhost:9091/metrics - Prometheus metrics endpoint
-- http://localhost:9091/healthz - Health endpoint
+- http://localhost:9001/metrics - Prometheus metrics endpoint
+- http://localhost:9001/healthz - Health endpoint
