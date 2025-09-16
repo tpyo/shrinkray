@@ -1,5 +1,6 @@
 use axum::{extract::Request, http::StatusCode, middleware::Next, response::IntoResponse};
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
+use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
 const BUCKET_VALUES: &[f64] = &[
@@ -7,25 +8,30 @@ const BUCKET_VALUES: &[f64] = &[
 ];
 
 pub fn setup_metrics() -> PrometheusHandle {
-    let mut builder = PrometheusBuilder::new();
-    builder = builder.upkeep_timeout(Duration::from_secs(300));
-    builder = builder
-        .set_buckets_for_metric(
-            Matcher::Full("shrinkray_fetch_duration_seconds_bucket".to_string()),
-            BUCKET_VALUES,
-        )
-        .expect("error creating metric bucket");
+    static PROMETHEUS_HANDLE: OnceLock<PrometheusHandle> = OnceLock::new();
+    PROMETHEUS_HANDLE
+        .get_or_init(|| {
+            let mut builder = PrometheusBuilder::new();
+            builder = builder.upkeep_timeout(Duration::from_secs(300));
+            builder = builder
+                .set_buckets_for_metric(
+                    Matcher::Full("shrinkray_fetch_duration_seconds_bucket".to_string()),
+                    BUCKET_VALUES,
+                )
+                .expect("error creating metric bucket");
 
-    builder = builder
-        .set_buckets_for_metric(
-            Matcher::Full("shrinkray_http_response_seconds_bucket".to_string()),
-            BUCKET_VALUES,
-        )
-        .expect("error creating metric bucket");
+            builder = builder
+                .set_buckets_for_metric(
+                    Matcher::Full("shrinkray_http_response_seconds_bucket".to_string()),
+                    BUCKET_VALUES,
+                )
+                .expect("error creating metric bucket");
 
-    builder
-        .install_recorder()
-        .expect("error installing prometheus recorder")
+            builder
+                .install_recorder()
+                .expect("error installing prometheus recorder")
+        })
+        .clone()
 }
 
 pub async fn middleware(req: Request, next: Next) -> impl IntoResponse {

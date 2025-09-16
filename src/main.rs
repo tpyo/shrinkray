@@ -146,6 +146,13 @@ fn get_router(config: &'static config::Config) -> Router<Arc<Service>> {
     router
 }
 
+fn get_management_router() -> Router {
+    let prom_handle = metrics::setup_metrics();
+    Router::new()
+        .route("/metrics", get(move || ready(prom_handle.render())))
+        .route("/healthz", get(|| async { StatusCode::OK }))
+}
+
 async fn run_server(
     service: &Arc<service::Service>,
 ) -> std::result::Result<(), Box<dyn std::error::Error>> {
@@ -170,10 +177,7 @@ async fn run_server(
 async fn run_management_server(
     service: &Arc<service::Service>,
 ) -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let prom_handle = metrics::setup_metrics();
-    let router = Router::new()
-        .route("/metrics", get(move || ready(prom_handle.render())))
-        .route("/healthz", get(|| async { StatusCode::OK }));
+    let router = get_management_router();
 
     let listener: tokio::net::TcpListener =
         tokio::net::TcpListener::bind(&service.config.management_address).await?;
@@ -286,5 +290,27 @@ mod tests {
         response.assert_text("image data");
 
         mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_management_server_healthz() {
+        let router = get_management_router();
+        let test_server = TestServer::new(router).unwrap();
+
+        let response = test_server.get("/healthz").await;
+        response.assert_status_ok();
+    }
+
+    #[tokio::test]
+    async fn test_management_server_metrics() {
+        let router = get_management_router();
+        let test_server = TestServer::new(router).unwrap();
+
+        ::metrics::counter!("shrinkray_test").increment(1);
+
+        let response = test_server.get("/metrics").await;
+        response.assert_status_ok();
+        let body = response.text();
+        assert!(body.contains("TYPE shrinkray_test"));
     }
 }
