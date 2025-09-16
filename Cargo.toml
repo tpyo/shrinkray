@@ -42,6 +42,7 @@ tracing-subscriber = { version = "0.3.20", features = ["json", "env-filter"] }
 url = "2.5.7"
 
 [dev-dependencies]
+axum-test = "18.1.0"
 mockito = "1.5.0"
 
 [workspace.lints.clippy]

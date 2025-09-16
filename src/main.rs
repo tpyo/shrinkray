@@ -208,3 +208,83 @@ async fn main() {
         .shutdown()
         .expect("failed to shutdown tracer provider");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{self, ConfigRouting};
+    use crate::image::Image;
+    use crate::options::ImageFormat;
+    use axum::http::{HeaderValue, header};
+    use axum_test::TestServer;
+
+    fn mock_config() -> config::Config {
+        config::Config {
+            otel_collector_endpoint: None,
+            server_address: "127.0.0.1:9000".parse().unwrap(),
+            management_address: "127.0.0.1:9001".parse().unwrap(),
+            read_timeout: 10,
+            routing: vec![],
+            proxies: vec![],
+            max_megapixels: Some(50.0),
+            max_output_resolution: Some(8000),
+            signing_secret: Some("test_secret".to_string()),
+            s3: None,
+        }
+    }
+
+    #[test]
+    fn test_get_headers_with_download() {
+        let image = Image {
+            bytes: vec![1, 2, 3],
+            content_type: ImageFormat::Png,
+        };
+
+        let headers = get_headers(&image, Some("test.png".to_string())).unwrap();
+
+        assert_eq!(
+            headers.get(header::CONTENT_TYPE).unwrap(),
+            &HeaderValue::from_static("image/png")
+        );
+        assert_eq!(
+            headers.get(header::CACHE_CONTROL).unwrap(),
+            &HeaderValue::from_static("public, max-age=31536000")
+        );
+        assert_eq!(
+            headers.get(header::CONTENT_DISPOSITION).unwrap(),
+            &HeaderValue::from_str("attachment; filename=\"test.png\"").unwrap()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_image_handler() {
+        let mut server = mockito::Server::new_async().await;
+
+        let config: config::Config = config::Config {
+            routing: vec![ConfigRouting {
+                path: "images/{*path}".to_string(),
+                endpoint: format!("{}/", server.url()),
+            }],
+            ..mock_config()
+        };
+
+        let mock = server
+            .mock("GET", "/file.jpg")
+            .with_status(200)
+            .with_body(b"image data")
+            .create_async()
+            .await;
+
+        let service = Arc::new(Service::new(config.clone()));
+        let router = get_router(Box::leak(Box::new(config))).with_state(service);
+
+        let test_server = TestServer::new(router).unwrap();
+
+        let response = test_server.get("/images/file.jpg").await;
+        response.assert_status_ok();
+        response.assert_header(header::CONTENT_TYPE, "image/jpeg");
+        response.assert_text("image data");
+
+        mock.assert_async().await;
+    }
+}
