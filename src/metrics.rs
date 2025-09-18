@@ -62,3 +62,46 @@ pub async fn middleware(req: Request, next: Next) -> impl IntoResponse {
     }
     response
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{Router, http::StatusCode, middleware::from_fn, routing::get};
+    use axum_test::TestServer;
+    use std::future::ready;
+
+    fn test_router() -> Router {
+        let prom_handle = setup_metrics();
+        Router::new()
+            .route("/metrics", get(move || ready(prom_handle.render())))
+            .route("/200", get(|| async { StatusCode::OK }))
+            .route("/401", get(|| async { StatusCode::UNAUTHORIZED }))
+            .route("/404", get(|| async { StatusCode::NOT_FOUND }))
+            .route("/500", get(|| async { StatusCode::INTERNAL_SERVER_ERROR }))
+            .layer(from_fn(middleware))
+    }
+
+    #[tokio::test]
+    async fn test_middleware_records_metrics() {
+        setup_metrics();
+        let app = test_router();
+        let server = TestServer::new(app).unwrap();
+
+        server.get("/200").await;
+        server.get("/401").await;
+        server.get("/404").await;
+        server.get("/500").await;
+
+        let response = server.get("/metrics").await;
+        response.assert_status_ok();
+        let body = response.text();
+        assert!(body.contains("TYPE shrinkray_http_response_200"));
+        assert!(body.contains("shrinkray_http_response_200 1"));
+        assert!(body.contains("TYPE shrinkray_http_response_401"));
+        assert!(body.contains("shrinkray_http_response_401 1"));
+        assert!(body.contains("TYPE shrinkray_http_response_404"));
+        assert!(body.contains("shrinkray_http_response_404 1"));
+        assert!(body.contains("TYPE shrinkray_http_response_500"));
+        assert!(body.contains("shrinkray_http_response_500 1"));
+    }
+}
