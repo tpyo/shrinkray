@@ -31,6 +31,23 @@ pub struct ConfigRouting {
     pub endpoint: String,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            server_address: "0.0.0.0:9000".parse().unwrap(),
+            management_address: "0.0.0.0:9001".parse().unwrap(),
+            read_timeout: 30,
+            routing: Vec::new(),
+            proxies: Vec::new(),
+            s3: None,
+            signing_secret: None,
+            otel_collector_endpoint: None,
+            max_megapixels: None,
+            max_output_resolution: None,
+        }
+    }
+}
+
 pub fn read_config() -> Result<Config, Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     let file = if args.len() > 1 {

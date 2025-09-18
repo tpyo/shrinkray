@@ -47,3 +47,103 @@ pub async fn middleware(
 
     response
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+    use axum::{Router, routing::get};
+    use axum_test::TestServer;
+    use std::io::Write;
+    use std::sync::{Arc, Mutex};
+    use tracing_subscriber::fmt::MakeWriter;
+
+    struct TestWriter {
+        buffer: Arc<Mutex<Vec<u8>>>,
+    }
+
+    impl TestWriter {
+        fn new() -> (Self, Arc<Mutex<Vec<u8>>>) {
+            let buffer = Arc::new(Mutex::new(Vec::new()));
+            (
+                Self {
+                    buffer: buffer.clone(),
+                },
+                buffer,
+            )
+        }
+    }
+
+    impl Write for TestWriter {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            self.buffer.lock().unwrap().extend_from_slice(buf);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    impl MakeWriter<'_> for TestWriter {
+        type Writer = Self;
+
+        fn make_writer(&self) -> Self::Writer {
+            Self {
+                buffer: self.buffer.clone(),
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_middleware_logging() {
+        let (test_writer, buffer) = TestWriter::new();
+
+        // Set up tracing subscriber with our test writer
+        let _guard = tracing_subscriber::fmt()
+            .with_writer(test_writer)
+            .with_ansi(false)
+            .try_init();
+
+        let config = Config::default();
+        let service = Arc::new(Service::new(config));
+
+        async fn handler() -> &'static str {
+            "test response"
+        }
+
+        let app = Router::new()
+            .route("/test", get(handler))
+            .layer(axum::middleware::from_fn_with_state(
+                service.clone(),
+                middleware,
+            ))
+            .with_state(service);
+
+        let server = TestServer::new(app).unwrap();
+
+        // Make a request
+        let response = server
+            .get("/test")
+            .add_header("Host", "example.com")
+            .add_header("User-Agent", "test-agent")
+            .add_header("Referer", "https://example.com/")
+            .await;
+
+        response.assert_status_ok();
+
+        // Give a moment for the log to be written
+        tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+
+        let binding = buffer.lock().unwrap();
+        let logged_output = String::from_utf8_lossy(&binding);
+
+        assert!(logged_output.contains("method=GET"));
+        assert!(logged_output.contains("request_uri=/test"));
+        assert!(logged_output.contains("domain=example.com"));
+        assert!(logged_output.contains("status=200"));
+        assert!(logged_output.contains("http_user_agent=test-agent"));
+        assert!(logged_output.contains("http_referrer=https://example.com/"));
+        assert!(logged_output.contains("response_time="));
+    }
+}
