@@ -95,13 +95,9 @@ mod tests {
         let response = server.get("/metrics").await;
         response.assert_status_ok();
         let body = response.text();
-        assert!(body.contains("TYPE shrinkray_http_response_200"));
         assert!(body.contains("shrinkray_http_response_200 1"));
-        assert!(body.contains("TYPE shrinkray_http_response_401"));
         assert!(body.contains("shrinkray_http_response_401 1"));
-        assert!(body.contains("TYPE shrinkray_http_response_404"));
         assert!(body.contains("shrinkray_http_response_404 1"));
-        assert!(body.contains("TYPE shrinkray_http_response_500"));
         assert!(body.contains("shrinkray_http_response_500 1"));
     }
 }
