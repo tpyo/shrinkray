@@ -44,6 +44,7 @@ url = "2.5.7"
 [dev-dependencies]
 axum-test = "18.1.0"
 mockito = "1.5.0"
+tracing-test = "0.2.5"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
