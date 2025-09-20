@@ -64,10 +64,10 @@ pub fn setup_tracing(config: &Config) -> SdkTracerProvider {
         tracing_subscriber::filter::LevelFilter::from_level(Level::INFO),
     );
 
-    tracing_subscriber::registry()
+    let _ = tracing_subscriber::registry()
         .with(logging_layer)
         .with(otel_layer)
-        .init();
+        .try_init();
 
     tracer_provider
 }
@@ -117,6 +117,37 @@ mod tests {
         assert!(re.is_match(&filter_str));
     }
 
+    #[test]
+    fn test_get_resource() {
+        let resource = get_resource();
+
+        // Test that resource contains the service name
+        let service_name = resource.get(&opentelemetry::Key::new("service.name"));
+        assert!(service_name.is_some());
+        assert_eq!(service_name.unwrap().as_str(), "shrinkray");
+
+        // Test resource is consistent (using OnceLock)
+        let resource2 = get_resource();
+        assert_eq!(resource.len(), resource2.len());
+    }
+
+    #[tokio::test]
+    async fn test_setup_tracing() {
+        let config = Config::default();
+
+        let provider = setup_tracing(&config);
+
+        let tracer = provider.tracer("shrinkray");
+        let mut span = tracer.start("test_span");
+        span.set_attribute(opentelemetry::KeyValue::new("key", "value"));
+        span.end();
+
+        assert!(span.span_context().is_valid());
+        assert!(provider.force_flush().is_ok());
+        drop(tracer);
+        assert!(provider.shutdown().is_ok());
+    }
+
     #[tokio::test]
     async fn test_tracing_provider() {
         let mock_exporter = MockSpanExporter::new();
@@ -131,7 +162,6 @@ mod tests {
         let processor = BatchSpanProcessor::new(mock_exporter, batch_config);
 
         let config = Config::default();
-
         let provider = setup_tracing_provider(&config)
             .with_span_processor(processor)
             .build();
@@ -140,7 +170,14 @@ mod tests {
 
         let mut span = tracer.start("test_span");
         span.set_attribute(opentelemetry::KeyValue::new("key", "value"));
+        span.add_event(
+            "test_event",
+            vec![opentelemetry::KeyValue::new("event_key", "event_value")],
+        );
+
+        assert!(span.is_recording());
         span.end();
+        assert!(!span.is_recording());
 
         let _ = provider.force_flush();
 
@@ -148,22 +185,9 @@ mod tests {
         assert_eq!(exported.len(), 1);
         assert_eq!(exported[0].name, "test_span");
         assert_eq!(exported[0].attributes.len(), 1);
+        assert_eq!(exported[0].events.len(), 1);
+        assert_eq!(exported[0].events[0].name, "test_event");
 
-        drop(tracer);
-        assert!(provider.shutdown().is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_setup_tracing() {
-        let config = Config::default();
-
-        let provider = setup_tracing(&config);
-
-        let tracer = provider.tracer("shrinkray");
-        let mut span = tracer.start("test_span");
-        span.end();
-
-        assert!(provider.force_flush().is_ok());
         drop(tracer);
         assert!(provider.shutdown().is_ok());
     }
