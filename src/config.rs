@@ -58,3 +58,44 @@ pub fn read_config() -> Result<Config, Box<dyn std::error::Error>> {
 
     Ok(serde_json::from_reader(File::open(file)?)?)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_read_config() {
+        let file = File::open("config/config.json").expect("failed to open config file");
+        let config: Config = serde_json::from_reader(file).expect("failed to parse config");
+
+        assert_eq!(config.server_address.to_string(), "0.0.0.0:9000");
+        assert_eq!(config.management_address.to_string(), "0.0.0.0:9001");
+        assert_eq!(config.read_timeout, 5);
+        assert_eq!(
+            config.otel_collector_endpoint,
+            Some("http://jaeger:4317".to_string())
+        );
+        assert_eq!(config.signing_secret, None);
+        assert_eq!(config.max_megapixels, None);
+        assert_eq!(config.max_output_resolution, None);
+
+        // Test S3 config
+        let s3_config = config.s3.expect("S3 config should be present");
+        assert_eq!(s3_config.access_key_id, "");
+        assert_eq!(s3_config.secret_access_key, "");
+        assert_eq!(s3_config.region, "us-east-1");
+        assert_eq!(s3_config.endpoint, None);
+
+        // Test routing
+        assert_eq!(config.routing.len(), 3);
+        assert_eq!(config.routing[0].path, "samples/{*path}");
+        assert_eq!(config.routing[0].endpoint, "https://shrinkray.photo/samples/");
+        assert_eq!(config.routing[1].path, "files/{*path}");
+        assert_eq!(config.routing[1].endpoint, "file:///app/files/");
+        assert_eq!(config.routing[2].path, "{*path}");
+        assert_eq!(config.routing[2].endpoint, "s3://bucket-name/");
+
+        // Test proxies
+        assert_eq!(config.proxies.len(), 0);
+    }
+}
