@@ -8,7 +8,7 @@ pub struct S3Config {
     pub access_key_id: String,
     pub secret_access_key: String,
     pub region: String,
-    pub endpoint_url: Option<String>,
+    pub endpoint: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
