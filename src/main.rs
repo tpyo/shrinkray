@@ -322,10 +322,9 @@ mod tests {
         let service = Arc::new(Service::new(config));
 
         let server_handle = tokio::spawn(async move {
-            let result = run_management_server(&service).await;
-            if let Err(err) = result {
-                eprintln!("management server error: {}", err);
-            }
+            run_management_server(&service)
+                .await
+                .expect("failed to run management server");
         });
 
         // Wait a bit for the server to start
@@ -338,7 +337,6 @@ mod tests {
         assert!(response.is_ok());
         assert_eq!(response.unwrap().status(), StatusCode::OK);
 
-        // Clean up
         server_handle.abort();
     }
 
@@ -364,11 +362,8 @@ mod tests {
             .await;
 
         let service = Arc::new(Service::new(config));
-        tokio::spawn(async move {
-            let result = run_server(&service).await;
-            if let Err(err) = result {
-                eprintln!("image server error: {}", err);
-            }
+        let server_handle = tokio::spawn(async move {
+            run_server(&service).await.expect("failed to run server");
         });
 
         // Wait a bit for the server to start
@@ -384,5 +379,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         mock.assert_async().await;
+
+        server_handle.abort();
     }
 }
