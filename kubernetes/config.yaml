@@ -19,7 +19,7 @@ data:
       "routing": [
           {
               "path": "files/{*path}",
-              "endpoint": "file:///app/samples/"
+              "endpoint": "http://example.com/files/"
           },
           {
               "path": "{*path}",
