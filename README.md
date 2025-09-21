@@ -77,6 +77,9 @@ http://localhost:9000/samples/01.jpg?rot=180
 #### Monochrome filter
 http://localhost:9000/samples/08.jpg?monochrome=100
 
+#### Duotone filter
+http://localhost:9000/samples/08.jpg?duotone=003263,ffa600
+
 #### Blur
 http://localhost:9000/samples/08.jpg?blur=100
 
@@ -106,6 +109,7 @@ http://localhost:9000/samples/08.jpg?blur=100
 | `technicolor` | Filter application (0-100)                               |
 | `sepia`       | Filter application (0-100)                               |
 | `monochrome`  | Filter application (0-100)                               |
+| `duotone`     | Duotone (shadow-colour,highlight-colour)                 |
 | `sig`         | HMAC signature used by `sign()` for request verification |
 
 
