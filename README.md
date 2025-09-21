@@ -25,9 +25,9 @@ Shrinkray is a lightweight, high-performance image proxy written in Rust.
 
 Shrinkray draws inspiration from other great image processing services, including:
 
-- [dali](https://github.com/olxgroup-oss/dali) – a flexible image server  
-- [imgproxy](https://github.com/imgproxy/imgproxy) – a high-performance Golang image proxy  
-- [imgix](https://www.imgix.com) – a commercial image optimization platform  
+- [dali](https://github.com/olxgroup-oss/dali) – a flexible image server
+- [imgproxy](https://github.com/imgproxy/imgproxy) – a high-performance Golang image proxy
+- [imgix](https://www.imgix.com) – a commercial image optimization platform
 
 ## Running shrinkray
 
@@ -55,63 +55,87 @@ Jaeger tracing is available at http://localhost:16686.
 ### Example URL parameters
 
 #### Resize with crop fit
+
 http://localhost:9000/samples/02.jpg?w=400&h=400&dpr=2&fit=crop
+
 - Resizes to 800×800 at double device pixel ratio (for retina screens)
 - Fits by cropping to fill the dimensions
 
 #### Resize with clip fit
+
 http://localhost:9000/samples/04.jpg?w=1024&h=768
+
 - Fits within 1024×768 without cropping
 
 #### Resize to aspect ratio
+
 http://localhost:9000/samples/03.jpg?ar=4:3&w=400
+
 - Resizes to 400x300 with cropping
 
 #### Trim whitespace
+
 http://localhost:9000/samples/trim.jpg?trim=auto
-- Trim colour can be set with `trim=colour` and `trim-colour=ffffff` 
+
+- Trim colour can be set with `trim=colour` and `trim-colour=ffffff`
 
 #### Rotatation
+
 http://localhost:9000/samples/01.jpg?rot=180
 
 #### Monochrome filter
+
 http://localhost:9000/samples/08.jpg?monochrome=100
 
 #### Duotone filter
+
 http://localhost:9000/samples/08.jpg?duotone=003263,ffa600
 
-#### Blur
-http://localhost:9000/samples/08.jpg?blur=100
+#### Duotone filter with opacity
 
+http://localhost:9000/samples/08.jpg?duotone=003263,ffa600&duotone-alpha=50
+
+- Applies duotone effect at 50% opacity, blending with original image
+
+#### Color tint
+
+http://localhost:9000/samples/08.jpg?tint=ff0000
+
+- Applies a red color tint to the image
+
+#### Blur
+
+http://localhost:9000/samples/08.jpg?blur=100
 
 ## Parameters
 
-| Parameter     | Description                                              |
-| ------------- | -------------------------------------------------------- |
-| `w`           | Width in pixels                                          |
-| `h`           | Height in pixels                                         |
-| `bg`          | Background colour used when padding or flattening        |
-| `ar`          | Aspect ratio (e.g. `16:9`)                               |
-| `q`           | Output quality (default: `75`)                           |
-| `dpr`         | Device pixel ratio multiplier                            |
-| `rot`         | Rotation in degrees (`90`, `180` or `270`)               |
-| `fit`         | Resizing mode (`clip`, `crop`, `max`) (default: `clip`)  |
-| `fm`          | Output format (`jpeg`, `webp`, `png`, `avif`)            |
-| `dl`          | Download filename for the response                       |
-| `lossless`    | Enable lossless encoding when available                  |
-| `trim`        | Trim borders automatically (`auto`, `colour`)            |
-| `trim-colour` | Set the trim colour for the `trim` parameter             |
-| `sharpen`     | Adjust sharpness (0-100)                                 |
-| `blur`        | Apply a blur (0-100)                                     |
-| `kodachrome`  | Filter application (0-100)                               |
-| `vintage`     | Filter application (0-100)                               |
-| `polaroid`    | Filter application (0-100)                               |
-| `technicolor` | Filter application (0-100)                               |
-| `sepia`       | Filter application (0-100)                               |
-| `monochrome`  | Filter application (0-100)                               |
-| `duotone`     | Duotone (`shadow`,`highlight` - e.g; `003263,ffa600`)    |
-| `sig`         | HMAC signature used by `sign()` for request verification |
-
+| Parameter       | Description                                              |
+| --------------- | -------------------------------------------------------- |
+| `w`             | Width in pixels                                          |
+| `h`             | Height in pixels                                         |
+| `bg`            | Background colour used when padding or flattening        |
+| `ar`            | Aspect ratio (e.g. `16:9`)                               |
+| `q`             | Output quality (default: `75`)                           |
+| `dpr`           | Device pixel ratio multiplier                            |
+| `rot`           | Rotation in degrees (`90`, `180` or `270`)               |
+| `fit`           | Resizing mode (`clip`, `crop`, `max`) (default: `clip`)  |
+| `fm`            | Output format (`jpeg`, `webp`, `png`, `avif`)            |
+| `dl`            | Download filename for the response                       |
+| `lossless`      | Enable lossless encoding when available                  |
+| `trim`          | Trim borders automatically (`auto`, `colour`)            |
+| `trim-colour`   | Set the trim colour for the `trim` parameter             |
+| `sharpen`       | Adjust sharpness (0-100)                                 |
+| `blur`          | Apply a blur (0-100)                                     |
+| `kodachrome`    | Filter application (0-100)                               |
+| `vintage`       | Filter application (0-100)                               |
+| `polaroid`      | Filter application (0-100)                               |
+| `technicolor`   | Filter application (0-100)                               |
+| `sepia`         | Filter application (0-100)                               |
+| `monochrome`    | Filter application (0-100)                               |
+| `duotone`       | Duotone (`shadow`,`highlight` - e.g; `003263,ffa600`)    |
+| `duotone-alpha` | Duotone opacity/alpha (1-100) (default: `100`)           |
+| `tint`          | Apply color tint (hex color - e.g; `ff0000`)             |
+| `sig`           | HMAC signature used by `sign()` for request verification |
 
 ## Management service
 
