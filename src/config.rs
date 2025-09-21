@@ -89,13 +89,16 @@ mod tests {
         // Test routing
         assert_eq!(config.routing.len(), 3);
         assert_eq!(config.routing[0].path, "samples/{*path}");
-        assert_eq!(config.routing[0].endpoint, "https://shrinkray.photo/samples/");
+        assert_eq!(
+            config.routing[0].endpoint,
+            "https://shrinkray.photo/samples/"
+        );
         assert_eq!(config.routing[1].path, "files/{*path}");
         assert_eq!(config.routing[1].endpoint, "file:///app/files/");
         assert_eq!(config.routing[2].path, "{*path}");
         assert_eq!(config.routing[2].endpoint, "s3://bucket-name/");
 
         // Test proxies
-        assert_eq!(config.proxies.len(), 0);
+        assert_eq!(config.proxies.len(), 2);
     }
 }
