@@ -150,6 +150,23 @@ pub struct ImageOptions {
         skip_serializing_if = "Option::is_none"
     )]
     pub duotone: Option<DuotoneColours>,
+
+    // Duotone alpha/opacity
+    #[serde(
+        default,
+        rename = "duotone-alpha",
+        deserialize_with = "deserialize_percentage",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub duotone_alpha: Option<Percentage>,
+
+    // Tint filter with colour
+    #[serde(
+        default,
+        deserialize_with = "deserialize_colour",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub tint: Option<Colour>,
 }
 
 impl Default for ImageOptions {
@@ -171,6 +188,8 @@ impl Default for ImageOptions {
             sepia: None,
             monochrome: None,
             duotone: None,
+            duotone_alpha: None,
+            tint: None,
             width: None,
             height: None,
             device_pixel_ratio: Some(1),
@@ -206,6 +225,8 @@ impl ImageOptions {
             || self.sepia.is_some()
             || self.monochrome.is_some()
             || self.duotone.is_some()
+            || self.duotone_alpha.is_some()
+            || self.tint.is_some()
             || self.width.is_some()
             || self.height.is_some()
             || (self.device_pixel_ratio.is_some() && self.device_pixel_ratio.unwrap() != 1)
@@ -284,6 +305,12 @@ impl ImageOptions {
                 "duotone".into(),
                 format!("{},{}", shadow_hex, highlight_hex),
             );
+        }
+        if let Some(duotone_alpha) = &self.duotone_alpha {
+            params.insert("duotone-alpha".into(), duotone_alpha.0.to_string());
+        }
+        if let Some(tint) = &self.tint {
+            params.insert("tint".into(), tint.into());
         }
         if let Some(width) = self.width {
             params.insert("width".into(), width.to_string());
@@ -892,6 +919,7 @@ mod tests {
             trim_colour: Some(Colour { r: 0, g: 255, b: 0 }),
             sharpen: Some(Percentage(50)),
             kodachrome: Some(Percentage(50)),
+            tint: Some(Colour { r: 255, g: 0, b: 255 }),
             ..Default::default()
         }
     }
@@ -901,7 +929,7 @@ mod tests {
         let query_str = get_image_options().query_str();
         assert_eq!(
             query_str,
-            "ar=16:9&background=ff0000&download=image.jpg&dpr=2&fit=crop&format=jpeg&height=200&kodachrome=50&quality=80&sharpen=50&trim=auto&trim-colour=00ff00&width=300"
+            "ar=16:9&background=ff0000&download=image.jpg&dpr=2&fit=crop&format=jpeg&height=200&kodachrome=50&quality=80&sharpen=50&tint=ff00ff&trim=auto&trim-colour=00ff00&width=300"
         );
     }
 
@@ -911,7 +939,7 @@ mod tests {
         let signature = get_image_options().sign(secret);
         assert_eq!(
             signature,
-            "210868675de768f0320ad506c85580bf686ab2feec6a35542e93c378e078e28a"
+            "934868feeed5203a0fde3fc40661c21d1cc1f5fd732c04b0fb9363d25813575f"
         );
     }
 
@@ -1211,5 +1239,33 @@ mod tests {
         let mut str = serde_json::Deserializer::from_str(value);
         let result = deserialize_duotone_colours(&mut str);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_tint_color_support() {
+        let options = ImageOptions {
+            tint: Some(Colour { r: 255, g: 0, b: 255 }),
+            ..Default::default()
+        };
+        assert!(options.any_set());
+        
+        let query_str = options.query_str();
+        assert!(query_str.contains("tint=ff00ff"));
+    }
+
+    #[test]
+    fn test_tint_deserialization() {
+        use axum::{extract::Query, http::Uri};
+        
+        let url = "https://example.com/image.jpg?tint=ff00ff";
+        let uri: Uri = url.parse().expect("failed to parse url");
+        let options: Query<ImageOptions> =
+            Query::try_from_uri(&uri).expect("failed to parse query");
+        
+        assert!(options.tint.is_some());
+        let tint = options.tint.as_ref().unwrap();
+        assert_eq!(tint.r, 255);
+        assert_eq!(tint.g, 0);
+        assert_eq!(tint.b, 255);
     }
 }

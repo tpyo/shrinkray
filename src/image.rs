@@ -176,9 +176,19 @@ pub fn process_image(
         image = trim(&image, options)?;
     }
 
+    // Tint
+    if let Some(tint_colour) = &options.tint {
+        image = tint(&image, tint_colour)?;
+    }
+
     // Duotone
     if let Some(duotone_colours) = &options.duotone {
-        image = duotone(&image, &duotone_colours.shadow, &duotone_colours.highlight)?;
+        image = duotone(
+            &image,
+            &duotone_colours.shadow,
+            &duotone_colours.highlight,
+            options.duotone_alpha,
+        )?;
     }
 
     // Flatten alpha image
@@ -383,10 +393,85 @@ fn apply_style(
 }
 
 #[tracing::instrument(skip_all)]
+pub fn tint(image: &VipsImage, tint_colour: &options::Colour) -> VipsResult<VipsImage> {
+    let type_before_tint = image.get_interpretation()?;
+
+    // Extract alpha channel if present
+    let alpha = if image.image_hasalpha() {
+        Some(ops::extract_band(image, image.get_bands() - 1)?)
+    } else {
+        None
+    };
+
+    // Remove alpha from image for processing if present
+    let work_image = if image.image_hasalpha() {
+        let bands = image.get_bands();
+        let mut band_images = Vec::new();
+        for i in 0..bands - 1 {
+            band_images.push(ops::extract_band(image, i)?);
+        }
+        ops::bandjoin(&mut band_images)?
+    } else {
+        ops::copy(image)?
+    };
+
+    // Convert tint colour to LAB space
+    let tint_rgb = VipsImage::new_from_memory(
+        &[tint_colour.r, tint_colour.g, tint_colour.b],
+        1,
+        1,
+        3,
+        ops::BandFormat::Uchar,
+    )?;
+    let tint_lab = ops::colourspace(&tint_rgb, ops::Interpretation::Lab)?;
+    let tint_lab_values = ops::getpoint(&tint_lab, 0, 0)?;
+
+    // Generate 256 LAB values where L varies from 0-100, A and B are from tint colour
+    let mut lut_data = Vec::with_capacity(256 * 3);
+
+    for i in 0..256 {
+        let l = (i as f64 / 255.0) * 100.0; // Convert to LAB L range (0-100)
+        lut_data.push(l);
+        lut_data.push(tint_lab_values[1]); // A from tint
+        lut_data.push(tint_lab_values[2]); // B from tint
+    }
+
+    // Create lookup table image in LAB space
+    let lut_bytes: Vec<u8> = lut_data.iter().map(|&x| x.round() as u8).collect();
+    let mut lut = VipsImage::new_from_memory(&lut_bytes, 256, 1, 3, ops::BandFormat::Uchar)?;
+
+    // Set LAB interpretation on the LUT
+    lut = ops::copy_with_opts(
+        &lut,
+        &ops::CopyOptions {
+            width: 256,
+            height: 1,
+            bands: 3,
+            interpretation: ops::Interpretation::Lab,
+            ..Default::default()
+        },
+    )?;
+
+    lut = ops::colourspace(&lut, type_before_tint)?;
+
+    let grayscale = ops::colourspace(&work_image, ops::Interpretation::BW)?;
+
+    let mut result = ops::maplut(&grayscale, &lut)?;
+
+    // Re-attach alpha channel if it was present
+    if let Some(alpha_channel) = alpha {
+        result = ops::bandjoin(&mut [result, alpha_channel])?;
+    }
+
+    Ok(result)
+}
+
+#[tracing::instrument(skip_all)]
 pub fn duotone(
     image: &VipsImage,
     shadow_colour: &options::Colour,
     highlight_colour: &options::Colour,
+    opacity: Option<options::Percentage>,
 ) -> VipsResult<VipsImage> {
     // Convert to grayscale
     let mut grayscale = libvips::ops::colourspace(image, libvips::ops::Interpretation::BW)?;
@@ -432,7 +517,49 @@ pub fn duotone(
         result = ops::bandjoin(&mut [result, alpha_channel])?;
     }
 
-    Ok(result)
+    // Handle opacity if specified
+    let opacity = opacity.unwrap_or(options::Percentage(100));
+
+    if opacity == options::Percentage(100) {
+        // Return the result without blending
+        return Ok(result);
+    }
+
+    // Convert to float band format to apply the opacity
+    result = ops::cast(&result, ops::BandFormat::Float)?;
+
+    // Add alpha channel if not present
+    result = if result.image_hasalpha() {
+        result
+    } else {
+        ops::bandjoin_const(&result, &mut [255.0])?
+    };
+
+    // Apply opacity to the alpha channel
+    let multiply = [1.0, 1.0, 1.0, f64::from(opacity.0) / 100.0];
+    let addition = [0.0, 0.0, 0.0, 0.0];
+    let mut multiply = multiply.to_vec();
+    let mut addition = addition.to_vec();
+    result = ops::linear(&result, &mut multiply, &mut addition)?;
+
+    // Composite with original image
+    result = ops::composite_2(image, &result, ops::BlendMode::Over)?;
+
+    // Convert back to uchar and flatten
+    result = ops::cast(&result, ops::BandFormat::Uchar)?;
+
+    let colour = &options::Colour {
+        r: 255,
+        g: 255,
+        b: 255,
+    };
+
+    let opts = ops::FlattenOptions {
+        background: colour.into(),
+        ..Default::default()
+    };
+
+    ops::flatten_with_opts(&result, &opts)
 }
 
 #[cfg(test)]
@@ -586,6 +713,39 @@ mod tests {
         .bytes;
 
         assert_result(&img, "duotone.jpg");
+    }
+
+    #[test]
+    fn test_duotone_alpha() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            duotone: Some(options::DuotoneColours {
+                shadow: options::Colour {
+                    r: 0,
+                    g: 50,
+                    b: 100,
+                },
+                highlight: options::Colour {
+                    r: 255,
+                    g: 165,
+                    b: 0,
+                },
+            }),
+            duotone_alpha: Some(options::Percentage(50)),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        assert_result(&img, "duotone-alpha.jpg");
     }
 
     #[test]
@@ -800,5 +960,28 @@ mod tests {
         .bytes;
 
         assert_result(&img, "sepia.jpg");
+    }
+
+    #[test]
+    fn test_tint() {
+        let svc = get_service();
+        let mut opts = options::ImageOptions {
+            tint: Some(options::Colour { r: 255, g: 0, b: 0 }),
+            ..Default::default()
+        };
+        let span = tracing::Span::current();
+
+        let img = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
+            &mut opts,
+            &svc.config,
+            span,
+        )
+        .expect("unable to process image")
+        .bytes;
+
+        //std::fs::write("tests/results/tint.jpg", &img).expect("unable to write image");
+
+        assert_result(&img, "tint.jpg");
     }
 }
