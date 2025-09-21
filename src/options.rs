@@ -1164,4 +1164,52 @@ mod tests {
         assert_eq!(png_opts.compression, 6);
         assert!(png_opts.interlace);
     }
+
+    #[test]
+    fn test_deserialize_duotone_colours_valid() {
+        let value = "\"ff0000,00ff00\"";
+        let mut str = serde_json::Deserializer::from_str(value);
+        let result = deserialize_duotone_colours(&mut str);
+        assert!(result.is_ok());
+        let duotone = result.unwrap().unwrap();
+        assert_eq!(duotone.shadow.r, 255);
+        assert_eq!(duotone.shadow.g, 0);
+        assert_eq!(duotone.shadow.b, 0);
+        assert_eq!(duotone.highlight.r, 0);
+        assert_eq!(duotone.highlight.g, 255);
+        assert_eq!(duotone.highlight.b, 0);
+    }
+
+    #[test]
+    fn test_deserialize_duotone_colours_empty_string() {
+        let value = "\"\"";
+        let mut str = serde_json::Deserializer::from_str(value);
+        let result = deserialize_duotone_colours(&mut str);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_deserialize_duotone_colours_invalid_too_few_colours() {
+        let value = "\"ff0000\"";
+        let mut str = serde_json::Deserializer::from_str(value);
+        let result = deserialize_duotone_colours(&mut str);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_duotone_colours_invalid_too_many_colours() {
+        let value = "\"ff0000,00ff00,0000ff\"";
+        let mut str = serde_json::Deserializer::from_str(value);
+        let result = deserialize_duotone_colours(&mut str);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_duotone_colours_invalid_hex_length() {
+        let value = "\"ff000,00ff00\"";
+        let mut str = serde_json::Deserializer::from_str(value);
+        let result = deserialize_duotone_colours(&mut str);
+        assert!(result.is_err());
+    }
 }

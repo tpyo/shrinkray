@@ -95,4 +95,26 @@ mod tests {
             "shutdown should wait for signal and timeout"
         );
     }
+
+    #[test]
+    fn test_vips_error() {
+        use crate::config::Config;
+        use libvips::error::Error as VipsError;
+
+        let service = Service::new(Config::default());
+
+        let vips_err = VipsError::OperationError("test operation failed");
+        let result = service.vips_error(vips_err);
+
+        match result {
+            crate::error::Error::Vips(err, buffer) => {
+                assert!(matches!(
+                    err,
+                    VipsError::OperationError("test operation failed")
+                ));
+                assert!(buffer.is_empty());
+            }
+            _ => panic!("expected Error::Vips variant"),
+        }
+    }
 }

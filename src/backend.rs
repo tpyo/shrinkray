@@ -45,8 +45,8 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
         return Err(Error::InvalidBackend);
     }
     if let Some(s3config) = &config.s3 {
-        let url = if let Some(endpoint_url) = &s3config.endpoint_url {
-            format!("{}{}", endpoint_url, path)
+        let url = if let Some(endpoint) = &s3config.endpoint {
+            format!("{}{}", endpoint, path)
         } else {
             format!(
                 "http://{}.s3.{}.amazonaws.com{}",
@@ -181,7 +181,7 @@ mod tests {
                 access_key_id: "test-access-key".to_string(),
                 secret_access_key: "test-secret-key".to_string(),
                 region: "test-region".to_string(),
-                endpoint_url: None,
+                endpoint: None,
             }),
         }
     }
@@ -189,7 +189,7 @@ mod tests {
     fn mock_config_with_endpoint(endpoint: String) -> config::Config {
         let mut config = mock_config();
         if let Some(s3_config) = &mut config.s3 {
-            s3_config.endpoint_url = Some(endpoint);
+            s3_config.endpoint = Some(endpoint);
         }
         config
     }
