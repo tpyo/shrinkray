@@ -216,26 +216,11 @@ async fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{self, ConfigRouting};
+    use crate::config::{self, Config, ConfigRouting};
     use crate::image::Image;
     use crate::options::ImageFormat;
     use axum::http::{HeaderValue, header};
     use axum_test::TestServer;
-
-    fn mock_config() -> config::Config {
-        config::Config {
-            otel_collector_endpoint: None,
-            server_address: "127.0.0.1:9000".parse().unwrap(),
-            management_address: "127.0.0.1:9001".parse().unwrap(),
-            read_timeout: 10,
-            routing: vec![],
-            proxies: vec![],
-            max_megapixels: Some(50.0),
-            max_output_resolution: Some(8000),
-            signing_secret: Some("test_secret".to_string()),
-            s3: None,
-        }
-    }
 
     #[test]
     fn test_get_headers_with_download() {
@@ -261,6 +246,18 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_invalid_route() {
+        let config = Config::default();
+        let service = Arc::new(Service::new(config));
+        let router = get_router(Box::leak(Box::new(service.config.clone()))).with_state(service);
+
+        let test_server = TestServer::new(router).unwrap();
+
+        let response = test_server.get("/invalid/path").await;
+        response.assert_status(StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
     async fn test_image_handler() {
         let mut server = mockito::Server::new_async().await;
 
@@ -269,7 +266,7 @@ mod tests {
                 path: "images/{*path}".to_string(),
                 endpoint: format!("{}/", server.url()),
             }],
-            ..mock_config()
+            ..Default::default()
         };
 
         let mock = server
@@ -312,5 +309,80 @@ mod tests {
         response.assert_status_ok();
         let body = response.text();
         assert!(body.contains("TYPE shrinkray_test"));
+    }
+
+    #[tokio::test]
+    async fn test_run_management_server() {
+        let config: config::Config = config::Config {
+            server_address: "0.0.0.0:9020".parse().unwrap(),
+            management_address: "0.0.0.0:9021".parse().unwrap(),
+            ..Default::default()
+        };
+
+        let service = Arc::new(Service::new(config));
+
+        let server_handle = tokio::spawn(async move {
+            let result = run_management_server(&service).await;
+            if let Err(err) = result {
+                eprintln!("management server error: {}", err);
+            }
+        });
+
+        // Wait a bit for the server to start
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+
+        let client = reqwest::Client::new();
+
+        let response = client.get("http://127.0.0.1:9021/healthz").send().await;
+
+        assert!(response.is_ok());
+        assert_eq!(response.unwrap().status(), StatusCode::OK);
+
+        // Clean up
+        server_handle.abort();
+    }
+
+    #[tokio::test]
+    async fn test_run_server() {
+        let mut server = mockito::Server::new_async().await;
+
+        let config: config::Config = config::Config {
+            server_address: "0.0.0.0:9030".parse().unwrap(),
+            management_address: "0.0.0.0:9031".parse().unwrap(),
+            routing: vec![ConfigRouting {
+                path: "images/{*path}".to_string(),
+                endpoint: format!("{}/", server.url()),
+            }],
+            ..Default::default()
+        };
+
+        let mock = server
+            .mock("GET", "/file.jpg")
+            .with_status(200)
+            .with_body(b"image data")
+            .create_async()
+            .await;
+
+        let service = Arc::new(Service::new(config));
+        tokio::spawn(async move {
+            let result = run_server(&service).await;
+            if let Err(err) = result {
+                eprintln!("image server error: {}", err);
+            }
+        });
+
+        // Wait a bit for the server to start
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get("http://127.0.0.1:9030/images/file.jpg")
+            .send()
+            .await;
+        assert!(response.is_ok());
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        mock.assert_async().await;
     }
 }
