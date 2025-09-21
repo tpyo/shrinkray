@@ -30,7 +30,7 @@ jobs:
         with:
           components: llvm-tools-preview
 
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+      - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: libvips libvips-dev
 
