@@ -92,7 +92,7 @@ http://localhost:9000/samples/08.jpg?blur=100
 | `h`           | Height in pixels                                         |
 | `bg`          | Background colour used when padding or flattening        |
 | `ar`          | Aspect ratio (e.g. `16:9`)                               |
-| `q`           | Output quality (default: 75)                             |
+| `q`           | Output quality (default: `75`)                           |
 | `dpr`         | Device pixel ratio multiplier                            |
 | `rot`         | Rotation in degrees (`90`, `180` or `270`)               |
 | `fit`         | Resizing mode (`clip`, `crop`, `max`) (default: `clip`)  |
@@ -109,7 +109,7 @@ http://localhost:9000/samples/08.jpg?blur=100
 | `technicolor` | Filter application (0-100)                               |
 | `sepia`       | Filter application (0-100)                               |
 | `monochrome`  | Filter application (0-100)                               |
-| `duotone`     | Duotone (shadow-colour,highlight-colour)                 |
+| `duotone`     | Duotone (`shadow`,`highlight` - e.g; `003263,ffa600`)    |
 | `sig`         | HMAC signature used by `sign()` for request verification |
 
 
