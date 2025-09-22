@@ -388,7 +388,7 @@ where
     }
 }
 
-#[derive(Debug, Serialize, Clone, Deserialize)]
+#[derive(Debug, Serialize, Clone, Deserialize, PartialEq)]
 pub struct Rotation(pub i32);
 
 impl From<&Rotation> for f64 {
@@ -919,7 +919,11 @@ mod tests {
             trim_colour: Some(Colour { r: 0, g: 255, b: 0 }),
             sharpen: Some(Percentage(50)),
             kodachrome: Some(Percentage(50)),
-            tint: Some(Colour { r: 255, g: 0, b: 255 }),
+            tint: Some(Colour {
+                r: 255,
+                g: 0,
+                b: 255,
+            }),
             ..Default::default()
         }
     }
@@ -1144,6 +1148,27 @@ mod tests {
     }
 
     #[test]
+    fn test_rotation_valid() {
+        for v in [90, 180, 270] {
+            let json = v.to_string();
+            let mut str = serde_json::Deserializer::from_str(&json);
+            let result = deserialize_rotation(&mut str);
+            assert!(result.is_ok());
+            assert_eq!(result.unwrap(), Some(Rotation(v)));
+        }
+    }
+
+    #[test]
+    fn test_rotation_invalid() {
+        for v in [0, 1, 45, 89, 91, 100, 360, -90] {
+            let json = v.to_string();
+            let mut str = serde_json::Deserializer::from_str(&json);
+            let result = deserialize_rotation(&mut str);
+            assert!(result.is_err(), "rotation {v} should not be accepted");
+        }
+    }
+
+    #[test]
     fn test_from_image_options_heif() {
         let mut options = ImageOptions {
             quality: Some(90),
@@ -1244,11 +1269,15 @@ mod tests {
     #[test]
     fn test_tint_color_support() {
         let options = ImageOptions {
-            tint: Some(Colour { r: 255, g: 0, b: 255 }),
+            tint: Some(Colour {
+                r: 255,
+                g: 0,
+                b: 255,
+            }),
             ..Default::default()
         };
         assert!(options.any_set());
-        
+
         let query_str = options.query_str();
         assert!(query_str.contains("tint=ff00ff"));
     }
@@ -1256,12 +1285,12 @@ mod tests {
     #[test]
     fn test_tint_deserialization() {
         use axum::{extract::Query, http::Uri};
-        
+
         let url = "https://example.com/image.jpg?tint=ff00ff";
         let uri: Uri = url.parse().expect("failed to parse url");
         let options: Query<ImageOptions> =
             Query::try_from_uri(&uri).expect("failed to parse query");
-        
+
         assert!(options.tint.is_some());
         let tint = options.tint.as_ref().unwrap();
         assert_eq!(tint.r, 255);
