@@ -126,6 +126,7 @@ http://localhost:9000/samples/08.jpg?blur=100
 | `trim-colour`   | Set the trim colour for the `trim` parameter             |
 | `sharpen`       | Adjust sharpness (0-100)                                 |
 | `blur`          | Apply a blur (0-100)                                     |
+| `tint`          | Apply a colour tint (e.g; `ff0000`)                      |
 | `kodachrome`    | Filter application (0-100)                               |
 | `vintage`       | Filter application (0-100)                               |
 | `polaroid`      | Filter application (0-100)                               |
@@ -134,7 +135,6 @@ http://localhost:9000/samples/08.jpg?blur=100
 | `monochrome`    | Filter application (0-100)                               |
 | `duotone`       | Duotone (`shadow`,`highlight` - e.g; `003263,ffa600`)    |
 | `duotone-alpha` | Duotone opacity/alpha (1-100) (default: `100`)           |
-| `tint`          | Apply color tint (hex color - e.g; `ff0000`)             |
 | `sig`           | HMAC signature used by `sign()` for request verification |
 
 ## Management service
