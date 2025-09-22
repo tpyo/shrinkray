@@ -122,10 +122,14 @@ fn colourspace(image: &VipsImage) -> VipsResult<VipsImage> {
 fn needs_rotation(buffer: &[u8]) -> bool {
     match rexif::parse_buffer_quiet(buffer).0 {
         Ok(data) => data.entries.into_iter().any(|e| {
-            e.tag == rexif::ExifTag::Orientation
-                && e.value.to_i64(0).is_some()
-                && e.value.to_i64(0).unwrap() != 0
-                && e.value.to_i64(0).unwrap() != 1
+            if e.tag != rexif::ExifTag::Orientation {
+                return false;
+            }
+            if let Some(v) = e.value.to_i64(0) {
+                v != 0 && v != 1
+            } else {
+                false
+            }
         }),
         Err(_) => false,
     }
@@ -393,7 +397,7 @@ fn apply_style(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn tint(image: &VipsImage, tint_colour: &options::Colour) -> VipsResult<VipsImage> {
+pub fn tint(image: &VipsImage, colour: &options::Colour) -> VipsResult<VipsImage> {
     let type_before_tint = image.get_interpretation()?;
 
     // Extract alpha channel if present
@@ -417,7 +421,7 @@ pub fn tint(image: &VipsImage, tint_colour: &options::Colour) -> VipsResult<Vips
 
     // Convert tint colour to LAB space
     let tint_rgb = VipsImage::new_from_memory(
-        &[tint_colour.r, tint_colour.g, tint_colour.b],
+        &[colour.r, colour.g, colour.b],
         1,
         1,
         3,
@@ -430,18 +434,17 @@ pub fn tint(image: &VipsImage, tint_colour: &options::Colour) -> VipsResult<Vips
     let mut lut_data = Vec::with_capacity(256 * 3);
 
     for i in 0..256 {
-        let l = (i as f64 / 255.0) * 100.0; // Convert to LAB L range (0-100)
-        lut_data.push(l);
+        lut_data.push((i as f64 / 255.0) * 100.0); // Convert to LAB L range (0-100)
         lut_data.push(tint_lab_values[1]); // A from tint
         lut_data.push(tint_lab_values[2]); // B from tint
     }
 
     // Create lookup table image in LAB space
-    let lut_bytes: Vec<u8> = lut_data.iter().map(|&x| x.round() as u8).collect();
-    let mut lut = VipsImage::new_from_memory(&lut_bytes, 256, 1, 3, ops::BandFormat::Uchar)?;
+    let lut_data: Vec<u8> = lut_data.iter().map(|&x| x.round() as u8).collect();
+    let lut = VipsImage::new_from_memory(&lut_data, 256, 1, 3, ops::BandFormat::Uchar)?;
 
     // Set LAB interpretation on the LUT
-    lut = ops::copy_with_opts(
+    let result = ops::copy_with_opts(
         &lut,
         &ops::CopyOptions {
             width: 256,
@@ -452,15 +455,15 @@ pub fn tint(image: &VipsImage, tint_colour: &options::Colour) -> VipsResult<Vips
         },
     )?;
 
-    lut = ops::colourspace(&lut, type_before_tint)?;
+    let result = ops::colourspace(&result, type_before_tint)?;
 
     let grayscale = ops::colourspace(&work_image, ops::Interpretation::BW)?;
 
-    let mut result = ops::maplut(&grayscale, &lut)?;
+    let result = ops::maplut(&grayscale, &result)?;
 
     // Re-attach alpha channel if it was present
     if let Some(alpha_channel) = alpha {
-        result = ops::bandjoin(&mut [result, alpha_channel])?;
+        return ops::bandjoin(&mut [result, alpha_channel]);
     }
 
     Ok(result)
@@ -979,8 +982,6 @@ mod tests {
         )
         .expect("unable to process image")
         .bytes;
-
-        //std::fs::write("tests/results/tint.jpg", &img).expect("unable to write image");
 
         assert_result(&img, "tint.jpg");
     }
