@@ -45,18 +45,18 @@ pub async fn middleware(req: Request, next: Next) -> impl IntoResponse {
     let response = next.run(req).await;
     match response.status() {
         StatusCode::OK => {
-            metrics::counter!("shrinkray_http_response_200").increment(1);
+            metrics::counter!("shrinkray_http_response_200_count").increment(1);
             let elapsed = start.elapsed().as_secs_f64();
             metrics::histogram!("shrinkray_http_response_seconds_bucket").record(elapsed);
         }
         StatusCode::UNAUTHORIZED => {
-            metrics::counter!("shrinkray_http_response_401").increment(1);
+            metrics::counter!("shrinkray_http_response_401_count").increment(1);
         }
         StatusCode::NOT_FOUND => {
-            metrics::counter!("shrinkray_http_response_404").increment(1);
+            metrics::counter!("shrinkray_http_response_404_count").increment(1);
         }
         StatusCode::INTERNAL_SERVER_ERROR => {
-            metrics::counter!("shrinkray_http_response_500").increment(1);
+            metrics::counter!("shrinkray_http_response_500_count").increment(1);
         }
         _ => {}
     }
@@ -71,7 +71,8 @@ mod tests {
     use std::future::ready;
 
     fn test_router() -> Router {
-        let prom_handle = setup_metrics();
+        static PROMETHEUS_HANDLE: OnceLock<PrometheusHandle> = OnceLock::new();
+        let prom_handle = PROMETHEUS_HANDLE.get_or_init(setup_metrics).clone();
         Router::new()
             .route("/metrics", get(move || ready(prom_handle.render())))
             .route("/200", get(|| async { StatusCode::OK }))
@@ -83,7 +84,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_middleware_records_metrics() {
-        setup_metrics();
         let app = test_router();
         let server = TestServer::new(app).unwrap();
 
@@ -95,9 +95,9 @@ mod tests {
         let response = server.get("/metrics").await;
         response.assert_status_ok();
         let body = response.text();
-        assert!(body.contains("shrinkray_http_response_200 1"));
-        assert!(body.contains("shrinkray_http_response_401 1"));
-        assert!(body.contains("shrinkray_http_response_404 1"));
-        assert!(body.contains("shrinkray_http_response_500 1"));
+        assert!(body.contains("shrinkray_http_response_200_count 1"));
+        assert!(body.contains("shrinkray_http_response_401_count 1"));
+        assert!(body.contains("shrinkray_http_response_404_count 1"));
+        assert!(body.contains("shrinkray_http_response_500_count 1"));
     }
 }
