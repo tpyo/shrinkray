@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.dev
-    container_name: "shrinkray"
+    container_name: shrinkray
     stop_grace_period: 1s
     working_dir: /app
     volumes:
@@ -19,9 +19,41 @@ services:
       #- "VIPS_INFO=1" # any value to enable verbose logging
       - "RUST_BACKTRACE=full"
       - "RUST_LOG=debug,watchexec=info,watchexec_cli=info,aws_config=info,aws_runtime=info,aws_sdk_s3=info,hyper=info,aws_smithy_runtime=info,server=trace"
-  jaeger:
-    image: jaegertracing/jaeger:2.7.0
-    environment:
-      - "COLLECTOR_OTLP_ENABLED=true"
+  grafana:
+    container_name: shrinkray-grafana
+    image: grafana/grafana
+    restart: unless-stopped
     ports:
-      - "16686:16686"
+      - "3000:3000"
+    volumes:
+      - ./docker/dev/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - ./docker/dev/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./docker/dev/grafana/dashboard.json:/etc/grafana/provisioning/dashboards/shrinkray.json
+    environment:
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_BASIC_ENABLED=false
+  alloy:
+    container_name: shrinkray-alloy
+    image: grafana/alloy
+    ports:
+      - 12345:12345
+    volumes:
+      - ./docker/dev/config.alloy:/etc/alloy/config.alloy
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    depends_on:
+      - tempo
+  tempo:
+    image: grafana/tempo
+    command: "-config.file=/etc/grafana/tempo.yml"
+    volumes:
+      - ./docker/dev/grafana/tempo.yml:/etc/grafana/tempo.yml
+    ports:
+      - "3200:3200"
+  prometheus:
+    container_name: shrinkray-prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - ./docker/dev/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"

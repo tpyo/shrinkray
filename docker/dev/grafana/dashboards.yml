@@ -1,0 +1,9 @@
+apiVersion: 1
+providers:
+  - name: 'shrinkray'
+    orgId: 1
+    folder: 'Shrinkray Dashboards'
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFiles: true
