@@ -2020,6 +2020,21 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 name = "shrinkray"
 version = "1.0.1"
 dependencies = [
+ "hex",
+ "libvips",
+ "rexif",
+ "ring",
+ "rstest",
+ "serde",
+ "serde_json",
+ "strum",
+ "tracing",
+]
+
+[[package]]
+name = "shrinkray-server"
+version = "1.0.1"
+dependencies = [
  "async-trait",
  "aws-sign-v4",
  "axum",
@@ -2044,6 +2059,7 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
+ "shrinkray",
  "strum",
  "thiserror",
  "tokio",

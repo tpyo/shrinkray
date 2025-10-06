@@ -2,12 +2,12 @@ mod backend;
 mod config;
 mod error;
 mod http;
-mod image;
 mod logging;
 mod metrics;
-mod options;
 mod otel;
 mod service;
+
+use shrinkray::{image, options};
 
 use axum::{
     Router,
@@ -99,8 +99,9 @@ async fn handle_image_request(
     let (send, recv) = tokio::sync::oneshot::channel();
 
     let span = tracing::Span::current();
+    let image_config = ctx.config.to_image_config();
     rayon::spawn(move || {
-        let image = image::process_image(&image, &mut options, &ctx.config, span)
+        let image = image::process_image(&image, &mut options, &image_config, span)
             .map_err(|err| ctx.vips_error(err));
         let _ = send.send(image);
     });

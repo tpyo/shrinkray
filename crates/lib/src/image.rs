@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::ImageConfig;
 use crate::options::{self, Percentage};
 use libvips::ops;
 use libvips::{Result as VipsResult, VipsImage};
@@ -149,7 +149,7 @@ fn load(bytes: &[u8], random_access: bool) -> VipsResult<VipsImage> {
 pub fn process_image(
     bytes: &[u8],
     options: &mut options::ImageOptions,
-    config: &Config,
+    config: &ImageConfig,
     span: tracing::Span,
 ) -> VipsResult<Image> {
     let rotation = options.rotate.is_some() || needs_rotation(bytes);
@@ -267,7 +267,7 @@ pub fn process_image(
 fn output(
     image: &VipsImage,
     options: &mut options::ImageOptions,
-    _config: &Config,
+    _config: &ImageConfig,
 ) -> VipsResult<Image> {
     let format = options.format.unwrap_or(options::ImageFormat::Jpeg);
 
@@ -568,11 +568,9 @@ pub fn duotone(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::ConfigRouting;
-    use crate::service::Service;
 
     pub fn assert_result(buffer: &[u8], path: &str) {
-        let expected = format!("tests/results/{}", path);
+        let expected = format!("../../../tests/results/{}", path);
         let img_result = VipsImage::new_from_buffer(buffer, "").expect("unable to read image");
         let img_expected = VipsImage::new_from_file(&expected).expect("unable to read image");
 
@@ -587,35 +585,16 @@ mod tests {
         );
     }
 
-    pub fn get_service() -> Service {
-        Service {
-            vips_app: crate::service::create_vips_app(),
-            config: get_config(),
-        }
-    }
-
-    pub fn get_config() -> Config {
-        Config {
-            server_address: "0.0.0.0:3000".parse().unwrap(),
-            management_address: "0.0.0.0:3001".parse().unwrap(),
+    pub fn get_config() -> ImageConfig {
+        ImageConfig {
             max_megapixels: Some(100.0),
             max_output_resolution: Some(8000),
-            read_timeout: 30,
-            routing: vec![ConfigRouting {
-                path: "{*path}".into(),
-                endpoint: "file://../tests/sources/".into(),
-            }],
-            proxies: vec![],
-            otel_collector_endpoint: None,
-            signing_secret: None,
-            s3: None,
         }
     }
 
     #[test]
     fn test_find_trim() {
-        let _svc = get_service();
-        let image = load(include_bytes!("../tests/sources/trim.jpg"), false)
+        let image = load(include_bytes!("../../../tests/sources/trim.jpg"), false)
             .expect("unable to load trim.jpg");
 
         let opts = options::ImageOptions {
@@ -644,7 +623,7 @@ mod tests {
 
     #[test]
     fn test_trim() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             trim: Some(options::Trim::Auto),
             ..Default::default()
@@ -652,9 +631,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/trim.jpg"),
+            include_bytes!("../../../tests/sources/trim.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -665,7 +644,7 @@ mod tests {
 
     #[test]
     fn test_resize() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             width: Some(300),
             height: Some(200),
@@ -675,9 +654,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -688,7 +667,7 @@ mod tests {
 
     #[test]
     fn test_duotone() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             duotone: Some(options::DuotoneColours {
                 shadow: options::Colour {
@@ -707,9 +686,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -720,7 +699,7 @@ mod tests {
 
     #[test]
     fn test_duotone_alpha() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             duotone: Some(options::DuotoneColours {
                 shadow: options::Colour {
@@ -740,9 +719,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -753,7 +732,7 @@ mod tests {
 
     #[test]
     fn test_blur() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             blur: Some(options::Percentage(50)),
             ..Default::default()
@@ -761,9 +740,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -774,7 +753,7 @@ mod tests {
 
     #[test]
     fn test_sharpen() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             sharpen: Some(options::Percentage(50)),
             ..Default::default()
@@ -782,9 +761,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -795,7 +774,7 @@ mod tests {
 
     #[test]
     fn test_flatten() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             background: Some(options::Colour {
                 r: 255,
@@ -807,9 +786,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/flatten.png"),
+            include_bytes!("../../../tests/sources/flatten.png"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -820,7 +799,7 @@ mod tests {
 
     #[test]
     fn test_rotate() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             rotate: Some(options::Rotation(90)),
             ..Default::default()
@@ -828,9 +807,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -841,7 +820,7 @@ mod tests {
 
     #[test]
     fn test_kodachrome() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             kodachrome: Some(options::Percentage(100)),
             ..Default::default()
@@ -849,9 +828,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -862,7 +841,7 @@ mod tests {
 
     #[test]
     fn test_polaroid() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             polaroid: Some(options::Percentage(100)),
             ..Default::default()
@@ -870,9 +849,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -883,7 +862,7 @@ mod tests {
 
     #[test]
     fn test_vintage() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             vintage: Some(options::Percentage(100)),
             ..Default::default()
@@ -891,9 +870,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -904,7 +883,7 @@ mod tests {
 
     #[test]
     fn test_technicolor() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             technicolor: Some(options::Percentage(100)),
             ..Default::default()
@@ -912,9 +891,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -925,7 +904,7 @@ mod tests {
 
     #[test]
     fn test_monochrome() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             monochrome: Some(options::Percentage(100)),
             ..Default::default()
@@ -933,9 +912,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -946,7 +925,7 @@ mod tests {
 
     #[test]
     fn test_sepia() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             sepia: Some(options::Percentage(100)),
             ..Default::default()
@@ -954,9 +933,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")
@@ -967,7 +946,7 @@ mod tests {
 
     #[test]
     fn test_tint() {
-        let svc = get_service();
+        let config = get_config();
         let mut opts = options::ImageOptions {
             tint: Some(options::Colour { r: 255, g: 0, b: 0 }),
             ..Default::default()
@@ -975,9 +954,9 @@ mod tests {
         let span = tracing::Span::current();
 
         let img = process_image(
-            include_bytes!("../tests/sources/test.jpg"),
+            include_bytes!("../../../tests/sources/test.jpg"),
             &mut opts,
-            &svc.config,
+            &config,
             span,
         )
         .expect("unable to process image")

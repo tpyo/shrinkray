@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use shrinkray::config::ImageConfig;
 use std::env;
 use std::fs::File;
 use std::net::SocketAddr;
@@ -44,6 +45,15 @@ impl Default for Config {
             otel_collector_endpoint: None,
             max_megapixels: None,
             max_output_resolution: None,
+        }
+    }
+}
+
+impl Config {
+    pub fn to_image_config(&self) -> ImageConfig {
+        ImageConfig {
+            max_megapixels: self.max_megapixels,
+            max_output_resolution: self.max_output_resolution,
         }
     }
 }
