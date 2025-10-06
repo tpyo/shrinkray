@@ -36,14 +36,14 @@ Shrinkray draws inspiration from other great image processing services, includin
 Download and edit the Kubernetes [config file](https://github.com/tpyo/shrinkray/blob/main/kubernetes/config.yaml):
 
 ```bash
-curl -O https://github.com/tpyo/shrinkray/blob/main/kubernetes/config.yaml
+curl -O https://raw.githubusercontent.com/tpyo/shrinkray/refs/heads/main/kubernetes/config.yaml
 ```
 
 Apply the Kubernetes manifests:
 
 ```bash
 kubectl apply -f config.yaml
-kubectl apply -f https://github.com/tpyo/shrinkray/blob/main/kubernetes/deployment.yaml]
+kubectl apply -f https://github.com/tpyo/shrinkray/blob/main/kubernetes/deployment.yaml
 ```
 
 ### Local Development
