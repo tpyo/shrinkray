@@ -43,7 +43,7 @@ Apply the Kubernetes manifests:
 
 ```bash
 kubectl apply -f config.yaml
-kubectl apply -f https://github.com/tpyo/shrinkray/blob/main/kubernetes/deployment.yaml
+kubectl apply -f https://github.com/tpyo/shrinkray/blob/main/kubernetes/deployment.yaml]
 ```
 
 ### Local Development
