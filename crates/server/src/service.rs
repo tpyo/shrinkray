@@ -1,7 +1,6 @@
 use crate::config::Config;
 use crate::error::Error;
 use libvips::{VipsApp, error::Error as VipsError};
-use once_cell::sync::OnceCell;
 use tokio::signal;
 
 pub struct Service {
@@ -12,7 +11,7 @@ pub struct Service {
 impl Service {
     pub fn new(config: Config) -> Self {
         Self {
-            vips_app: create_vips_app(),
+            vips_app: shrinkray::create_vips_app(),
             config,
         }
     }
@@ -21,20 +20,6 @@ impl Service {
         self.vips_app.error_clear();
         Error::Vips(err, error_buffer)
     }
-}
-
-pub fn create_vips_app() -> &'static VipsApp {
-    // libvips requires global initialization and assumes there is only
-    // one global VipsApp per process. Creating multiple instances of
-    // VipsApp::new(...) in the same test binary (even across different
-    // tests) will lead to undefined behavior.
-    static VIPS: OnceCell<VipsApp> = OnceCell::new();
-    VIPS.get_or_init(|| {
-        let app = VipsApp::new("shrinkray", false).expect("failed to initialize libvips");
-        app.cache_set_max(0);
-        app.cache_set_max_mem(0);
-        app
-    })
 }
 
 pub async fn shutdown() {

@@ -568,7 +568,10 @@ mod tests {
     use super::*;
 
     pub fn assert_result(buffer: &[u8], path: &str) {
-        let expected = format!("../../../tests/results/{}", path);
+        // Ensure VipsApp is initialized
+        let _vips = crate::create_vips_app();
+
+        let expected = format!("tests/results/{}", path);
         let img_result = VipsImage::new_from_buffer(buffer, "").expect("unable to read image");
         let img_expected = VipsImage::new_from_file(&expected).expect("unable to read image");
 
@@ -584,6 +587,7 @@ mod tests {
     }
 
     pub fn get_config() -> ImageConfig {
+        let _vips = crate::create_vips_app();
         ImageConfig {
             max_megapixels: Some(100.0),
             max_output_resolution: Some(8000),
@@ -592,7 +596,10 @@ mod tests {
 
     #[test]
     fn test_find_trim() {
-        let image = load(include_bytes!("../../../tests/sources/trim.jpg"), false)
+        // Ensure VipsApp is initialized
+        let _vips = crate::create_vips_app();
+
+        let image = load(include_bytes!("../tests/sources/trim.jpg"), false)
             .expect("unable to load trim.jpg");
 
         let opts = options::ImageOptions {
@@ -628,14 +635,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/trim.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/trim.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "trim.jpg");
     }
@@ -651,14 +661,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "resize.jpg");
     }
@@ -683,14 +696,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "duotone.jpg");
     }
@@ -716,14 +732,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "duotone-alpha.jpg");
     }
@@ -737,14 +756,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "blur.jpg");
     }
@@ -758,14 +780,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "sharpen.jpg");
     }
@@ -783,14 +808,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/flatten.png"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/flatten.png"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "flatten.jpg");
     }
@@ -804,14 +832,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "rotate.jpg");
     }
@@ -825,14 +856,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "kodachrome.jpg");
     }
@@ -846,14 +880,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "polaroid.jpg");
     }
@@ -867,14 +904,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "vintage.jpg");
     }
@@ -888,14 +928,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "technicolor.jpg");
     }
@@ -909,14 +952,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "monochrome.jpg");
     }
@@ -930,14 +976,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "sepia.jpg");
     }
@@ -951,14 +1000,17 @@ mod tests {
         };
         let span = tracing::Span::current();
 
-        let img = process_image(
-            include_bytes!("../../../tests/sources/test.jpg"),
+        let vips_image = process_image(
+            include_bytes!("../tests/sources/test.jpg"),
             &mut opts,
             &config,
             span,
         )
-        .expect("unable to process image")
-        .bytes;
+        .expect("unable to process image");
+
+        let img = output(&vips_image, &mut opts, &config)
+            .expect("unable to output image")
+            .bytes;
 
         assert_result(&img, "tint.jpg");
     }

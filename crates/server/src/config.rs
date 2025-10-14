@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_read_config() {
-        let file = File::open("config/config.json").expect("failed to open config file");
+        let file = File::open("../../config/config.json").expect("failed to open config file");
         let config: Config = serde_json::from_reader(file).expect("failed to parse config");
 
         assert_eq!(config.server_address.to_string(), "0.0.0.0:9000");
