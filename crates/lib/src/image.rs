@@ -270,10 +270,11 @@ fn output(
     _config: &ImageConfig,
 ) -> VipsResult<Image> {
     let format = options.format.unwrap_or(options::ImageFormat::Jpeg);
-
     tracing::Span::current().record("shrinkray.format", format.to_string());
 
-    match format {
+    let start = std::time::Instant::now();
+
+    let output = match format {
         options::ImageFormat::Jpeg => Ok(Image {
             bytes: ops::jpegsave_buffer_with_opts(image, &options.into())?,
             content_type: options::ImageFormat::Jpeg,
@@ -290,7 +291,9 @@ fn output(
             bytes: ops::pngsave_buffer_with_opts(image, &options.into())?,
             content_type: options::ImageFormat::Png,
         }),
-    }
+    };
+    crate::metrics::output_duration(start.elapsed(), &format.to_string());
+    output
 }
 
 #[tracing::instrument(skip_all)]
