@@ -151,7 +151,7 @@ pub fn process_image(
     options: &mut options::ImageOptions,
     config: &ImageConfig,
     span: tracing::Span,
-) -> VipsResult<Image> {
+) -> VipsResult<VipsImage> {
     let rotation = options.rotate.is_some() || needs_rotation(bytes);
     let random_access = rotation || options.trim.is_some();
 
@@ -259,12 +259,11 @@ pub fn process_image(
         image = colourspace(&image)?;
     }
 
-    // Output the image
-    output(&image, options, config)
+    Ok(image)
 }
 
 #[tracing::instrument(skip_all)]
-fn output(
+pub fn output(
     image: &VipsImage,
     options: &mut options::ImageOptions,
     _config: &ImageConfig,
@@ -272,9 +271,7 @@ fn output(
     let format = options.format.unwrap_or(options::ImageFormat::Jpeg);
     tracing::Span::current().record("shrinkray.format", format.to_string());
 
-    let start = std::time::Instant::now();
-
-    let output = match format {
+    match format {
         options::ImageFormat::Jpeg => Ok(Image {
             bytes: ops::jpegsave_buffer_with_opts(image, &options.into())?,
             content_type: options::ImageFormat::Jpeg,
@@ -291,9 +288,7 @@ fn output(
             bytes: ops::pngsave_buffer_with_opts(image, &options.into())?,
             content_type: options::ImageFormat::Png,
         }),
-    };
-    crate::metrics::output_duration(start.elapsed(), &format.to_string());
-    output
+    }
 }
 
 #[tracing::instrument(skip_all)]

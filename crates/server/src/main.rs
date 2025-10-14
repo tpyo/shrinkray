@@ -101,9 +101,15 @@ async fn handle_image_request(
     let span = tracing::Span::current();
     let image_config = ctx.config.to_image_config();
     rayon::spawn(move || {
-        let image = image::process_image(&image, &mut options, &image_config, span)
+        let result = image::process_image(&image, &mut options, &image_config, span.clone())
+            .and_then(|vips_image| {
+                let start = std::time::Instant::now();
+                let output = image::output(&vips_image, &mut options, &image_config)?;
+                metrics::output_duration(start.elapsed(), &output.content_type.to_string());
+                Ok(output)
+            })
             .map_err(|err| ctx.vips_error(err));
-        let _ = send.send(image);
+        let _ = send.send(result);
     });
     let image = recv
         .await
