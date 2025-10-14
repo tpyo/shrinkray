@@ -1,7 +1,7 @@
 use axum::{extract::Request, http::StatusCode, middleware::Next, response::IntoResponse};
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
 use std::sync::OnceLock;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 const BUCKET_VALUES: &[f64] = &[
     0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0,
@@ -15,14 +15,14 @@ pub fn setup_metrics() -> PrometheusHandle {
             builder = builder.upkeep_timeout(Duration::from_secs(300));
             builder = builder
                 .set_buckets_for_metric(
-                    Matcher::Full("shrinkray_fetch_duration_seconds_bucket".to_string()),
+                    Matcher::Full("shrinkray_fetch_duration_seconds".to_string()),
                     BUCKET_VALUES,
                 )
                 .expect("error creating metric bucket");
 
             builder = builder
                 .set_buckets_for_metric(
-                    Matcher::Full("shrinkray_http_response_seconds_bucket".to_string()),
+                    Matcher::Full("shrinkray_output_duration_seconds".to_string()),
                     BUCKET_VALUES,
                 )
                 .expect("error creating metric bucket");
@@ -35,7 +35,6 @@ pub fn setup_metrics() -> PrometheusHandle {
 }
 
 pub async fn middleware(req: Request, next: Next) -> impl IntoResponse {
-    let start = Instant::now();
     let uri = req.uri().to_string();
 
     if ["/", "/metrics", "/healthz", "/favicon.ico"].contains(&uri.as_str()) {
@@ -46,8 +45,6 @@ pub async fn middleware(req: Request, next: Next) -> impl IntoResponse {
     match response.status() {
         StatusCode::OK => {
             metrics::counter!("shrinkray_http_response_200_count").increment(1);
-            let elapsed = start.elapsed().as_secs_f64();
-            metrics::histogram!("shrinkray_http_response_seconds_bucket").record(elapsed);
         }
         StatusCode::UNAUTHORIZED => {
             metrics::counter!("shrinkray_http_response_401_count").increment(1);
@@ -61,6 +58,17 @@ pub async fn middleware(req: Request, next: Next) -> impl IntoResponse {
         _ => {}
     }
     response
+}
+
+pub fn output_duration(duration: Duration, format: &str) {
+    let labels: [(&str, String); 1] = [("format", format.to_string())];
+    metrics::histogram!("shrinkray_output_duration_seconds", &labels)
+        .record(duration.as_secs_f64());
+}
+
+pub fn fetch_duration(duration: Duration, backend: &str) {
+    let labels: [(&str, String); 1] = [("backend", backend.to_string())];
+    metrics::histogram!("shrinkray_fetch_duration_seconds", &labels).record(duration.as_secs_f64());
 }
 
 #[cfg(test)]
