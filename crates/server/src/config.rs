@@ -83,7 +83,7 @@ mod tests {
         assert_eq!(config.read_timeout, 5);
         assert_eq!(
             config.otel_collector_endpoint,
-            Some("http://jaeger:4317".to_string())
+            Some("http://alloy:4317".to_string())
         );
         assert_eq!(config.signing_secret, None);
         assert_eq!(config.max_megapixels, None);
