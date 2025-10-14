@@ -23,6 +23,7 @@ services:
     container_name: shrinkray-grafana
     image: grafana/grafana
     restart: unless-stopped
+    stop_grace_period: 1s
     ports:
       - "3000:3000"
     volumes:
@@ -33,9 +34,11 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_BASIC_ENABLED=false
+      - GF_LOG_LEVEL=warn
   alloy:
     container_name: shrinkray-alloy
     image: grafana/alloy
+    stop_grace_period: 1s
     ports:
       - 12345:12345
     volumes:
@@ -45,7 +48,8 @@ services:
       - tempo
   tempo:
     image: grafana/tempo
-    command: "-config.file=/etc/grafana/tempo.yml"
+    stop_grace_period: 1s
+    command: "-config.file=/etc/grafana/tempo.yml -log.level=warn"
     volumes:
       - ./docker/dev/grafana/tempo.yml:/etc/grafana/tempo.yml
     ports:
@@ -53,6 +57,9 @@ services:
   prometheus:
     container_name: shrinkray-prometheus
     image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--log.level=warn"
     volumes:
       - ./docker/dev/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
