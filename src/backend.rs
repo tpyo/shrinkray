@@ -5,6 +5,7 @@ use url::Url;
 
 use crate::config::Config;
 use crate::error::{Error, Result};
+use crate::metrics::fetch_duration;
 
 impl From<tokio::io::Error> for Error {
     fn from(err: tokio::io::Error) -> Self {
@@ -84,12 +85,15 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
 #[tracing::instrument(skip_all, fields(shrinkray.file = url))]
 pub async fn get_file_from_backend(url: &str, config: &Config) -> Result<Vec<u8>> {
     let url = Url::parse(url)?;
-    match url.scheme() {
+    let start = std::time::Instant::now();
+    let data = match url.scheme() {
         "file" => get_file_from_file(url.path()).await,
         "http" | "https" => get_file_from_http(url.as_str(), config).await,
         "s3" => get_file_from_s3(url.host_str().unwrap(), url.path(), config).await,
         _ => Err(Error::InvalidBackend),
-    }
+    };
+    fetch_duration(start.elapsed(), url.scheme());
+    data
 }
 
 async fn send_request(client: &Client, url: &str, headers: HeaderMap) -> Result<Response> {
