@@ -50,7 +50,7 @@ kubectl apply -f https://github.com/tpyo/shrinkray/blob/main/kubernetes/deployme
 
 Run `docker-compose up` to start a development instance listening on http://localhost:9000.
 
-Jaeger tracing is available at http://localhost:16686.
+Grafana is available at http://localhost:3000.
 
 ### Example URL parameters
 
