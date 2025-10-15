@@ -141,3 +141,25 @@ http://localhost:9000/samples/08.jpg?blur=100
 
 - http://localhost:9001/metrics - Prometheus metrics endpoint
 - http://localhost:9001/healthz - Health endpoint
+
+## Prometheus Metrics
+
+Shrinkray exports the following Prometheus metrics:
+
+### Counters
+
+| Metric                              | Description                     |
+| ----------------------------------- | ------------------------------- |
+| `shrinkray_http_response_200_count` | Count of successful responses   |
+| `shrinkray_http_response_401_count` | Count of unauthorized responses |
+| `shrinkray_http_response_404_count` | Count of not found responses    |
+| `shrinkray_http_response_500_count` | Count of internal server errors |
+
+### Histograms
+
+| Metric                              | Labels    | Description                           |
+| ----------------------------------- | --------- | ------------------------------------- |
+| `shrinkray_fetch_duration_seconds`  | `backend` | Duration of image fetching operations |
+| `shrinkray_output_duration_seconds` | `format`  | Duration of image encoding operations |
+
+Both histogram metrics use buckets: `0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0` seconds.
