@@ -7,10 +7,9 @@ WORKDIR /build
 
 COPY Cargo.toml .
 COPY Cargo.lock .
-COPY build.rs .
-COPY ./src ./src
+COPY ./crates ./crates
 
-RUN cargo build --config net.git-fetch-with-cli=true --release
+RUN cargo build --config net.git-fetch-with-cli=true --release -p server
 
 FROM debian:bookworm-slim AS final
 
@@ -34,7 +33,7 @@ RUN apt-get update -qq && \
     libpng-dev \
     ca-certificates
 
-COPY --from=build /build/target/release/shrinkray /opt/shrinkray/bin/server
+COPY --from=build /build/target/release/server /opt/shrinkray/bin/server
 
 ENV PKG_CONFIG_PATH="\$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
 ENV LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:/opt/shrinkray/lib"

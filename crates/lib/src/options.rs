@@ -984,6 +984,33 @@ mod tests {
     }
 
     #[test]
+    fn test_any_set_single_option_vintage() {
+        let options = ImageOptions {
+            vintage: Some(Percentage(50)),
+            ..Default::default()
+        };
+        assert!(options.any_set());
+    }
+
+    #[test]
+    fn test_any_set_single_option_signature() {
+        let options = ImageOptions {
+            signature: Some("test".to_string()),
+            ..Default::default()
+        };
+        assert!(options.any_set());
+    }
+
+    #[test]
+    fn test_any_set_single_option_tint() {
+        let options = ImageOptions {
+            tint: Some(Colour { r: 255, g: 0, b: 0 }),
+            ..Default::default()
+        };
+        assert!(options.any_set());
+    }
+
+    #[test]
     fn test_get_resize_scale_width_only() {
         let options = ImageOptions {
             width: Some(300),

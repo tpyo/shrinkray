@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use shrinkray::config::ImageConfig;
 use std::env;
 use std::fs::File;
 use std::net::SocketAddr;
@@ -48,6 +49,15 @@ impl Default for Config {
     }
 }
 
+impl Config {
+    pub fn to_image_config(&self) -> ImageConfig {
+        ImageConfig {
+            max_megapixels: self.max_megapixels,
+            max_output_resolution: self.max_output_resolution,
+        }
+    }
+}
+
 pub fn read_config() -> Result<Config, Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     let file = if args.len() > 1 {
@@ -65,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_read_config() {
-        let file = File::open("config/config.json").expect("failed to open config file");
+        let file = File::open("../../config/config.json").expect("failed to open config file");
         let config: Config = serde_json::from_reader(file).expect("failed to parse config");
 
         assert_eq!(config.server_address.to_string(), "0.0.0.0:9000");
