@@ -59,6 +59,8 @@ services:
     image: prom/prometheus:latest
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--enable-feature=native-histograms"
+      - "--web.enable-remote-write-receiver"
       - "--log.level=warn"
     volumes:
       - ./docker/dev/prometheus.yml:/etc/prometheus/prometheus.yml
