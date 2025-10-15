@@ -4,6 +4,7 @@ version = "1.0.1"
 edition = "2024"
 publish = false
 rust-version = "1.90.0"
+authors = ["Don Schonknecht <don@tpyo.net>"]
 build = "../lib/build.rs"
 
 [[bin]]
