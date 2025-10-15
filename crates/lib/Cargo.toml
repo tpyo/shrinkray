@@ -3,11 +3,19 @@ name = "shrinkray"
 version = "1.0.1"
 edition = "2024"
 rust-version = "1.90.0"
+description = "Lightning-fast image resizing & optimization for the web"
+homepage = "https://shrinkray.photo"
 authors = ["Don Schonknecht <don@tpyo.net>"]
+repository = "https://github.com/tpyo/shrinkray"
+readme = "README.md"
+license = "MIT"
+license-file = "../../LICENSE"
 build = "build.rs"
 exclude = ["tests/*"]
+categories = ["multimedia::images", "multimedia::encoding", "graphics"]
 keywords = [
     "libvips",
+    "vips",
     "image",
     "resize",
     "thumbnail",
