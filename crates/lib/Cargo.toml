@@ -3,9 +3,19 @@ name = "shrinkray"
 version = "1.0.1"
 edition = "2024"
 rust-version = "1.90.0"
+authors = ["Don Schonknecht <don@tpyo.net>"]
 build = "build.rs"
 exclude = ["tests/*"]
-authors = ["Don Schonknecht <don@tpyo.net>"]
+keywords = [
+    "libvips",
+    "image",
+    "resize",
+    "thumbnail",
+    "webp",
+    "jpeg",
+    "png",
+    "avif",
+]
 
 [lib]
 name = "shrinkray"
