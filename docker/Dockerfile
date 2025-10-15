@@ -9,7 +9,7 @@ COPY Cargo.toml .
 COPY Cargo.lock .
 COPY ./crates ./crates
 
-RUN cargo build --config net.git-fetch-with-cli=true --release -p server
+RUN cargo build --config net.git-fetch-with-cli=true --release -p shrinkray-server
 
 FROM debian:bookworm-slim AS final
 
@@ -33,11 +33,11 @@ RUN apt-get update -qq && \
     libpng-dev \
     ca-certificates
 
-COPY --from=build /build/target/release/server /opt/shrinkray/bin/server
+COPY --from=build /build/target/release/shrinkray /opt/shrinkray/bin/shrinkray
 
 ENV PKG_CONFIG_PATH="\$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
 ENV LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:/opt/shrinkray/lib"
 ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so.2"
 ENV PATH="$PATH:/opt/shrinkray/bin"
 
-ENTRYPOINT ["/opt/shrinkray/bin/server"]
+ENTRYPOINT ["/opt/shrinkray/bin/shrinkray"]
