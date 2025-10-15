@@ -3,7 +3,7 @@ name = "shrinkray"
 version = "1.0.1"
 edition = "2024"
 rust-version = "1.90.0"
-build = "../build.rs"
+build = "build.rs"
 
 [lib]
 name = "shrinkray"

@@ -4,7 +4,7 @@ version = "1.0.1"
 edition = "2024"
 publish = false
 rust-version = "1.90.0"
-build = "../build.rs"
+build = "../lib/build.rs"
 
 [[bin]]
 name = "shrinkray"

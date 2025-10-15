@@ -48,10 +48,6 @@ jobs:
 
       - name: Create debug build
         run: cargo build --verbose
-        env:
-          LIB_PATH: /usr/lib/x86_64-linux-gnu/
 
       - name: Run tests
         run: cargo test --verbose
-        env:
-          LIB_PATH: /usr/lib/x86_64-linux-gnu/
