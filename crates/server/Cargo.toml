@@ -56,5 +56,5 @@ url = "2.5.7"
 [dev-dependencies]
 axum-test = "18.1.0"
 mockito = "1.5.0"
-regex = "1.11.2"
+regex = "1.12.2"
 tracing-test = "0.2.5"
