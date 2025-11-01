@@ -20,7 +20,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-shrinkray = "1.0"
+shrinkray = "1.0.1"
 ```
 
 ### System Dependencies
