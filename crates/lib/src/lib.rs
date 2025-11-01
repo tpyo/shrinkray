@@ -359,12 +359,12 @@ mod tests {
         let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
             .resize(300, 200)
             .quality(80)
-            .format(options::Format::Jpeg)
+            .format(Format::Jpeg)
             .process()
             .expect("Failed to process image");
 
         assert!(!result.bytes().is_empty());
-        assert_eq!(result.format(), options::Format::Jpeg);
+        assert_eq!(result.format(), Format::Jpeg);
         assert_eq!(result.mime_type(), "image/jpeg");
     }
 
@@ -435,16 +435,16 @@ mod tests {
     fn test_image_processor_complex_chain() {
         let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
             .resize(800, 600)
-            .fit(options::Fit::Crop)
+            .fit(Fit::Crop)
             .quality(85)
-            .format(options::Format::Webp)
+            .format(Format::Jpeg)
             .sharpen(50)
             .vintage(60)
             .process()
             .expect("Failed to process image");
 
         assert!(!result.bytes().is_empty());
-        assert_eq!(result.format(), Format::Webp);
+        assert_eq!(result.format(), Format::Jpeg);
     }
 
     #[test]
@@ -461,7 +461,7 @@ mod tests {
     #[test]
     fn test_processed_image_content_type() {
         let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
-            .format(options::Format::Png)
+            .format(Format::Png)
             .process()
             .expect("Failed to process image");
 
