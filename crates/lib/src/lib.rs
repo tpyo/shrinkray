@@ -361,7 +361,7 @@ mod tests {
             .quality(80)
             .format(Format::Jpeg)
             .process()
-            .expect("Failed to process image");
+            .expect("unable to process image");
 
         assert!(!result.bytes().is_empty());
         assert_eq!(result.format(), Format::Jpeg);
@@ -373,7 +373,7 @@ mod tests {
         let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
             .thumbnail(200)
             .process()
-            .expect("Failed to process image");
+            .expect("unable to process image");
 
         assert!(!result.bytes().is_empty());
     }
@@ -385,7 +385,7 @@ mod tests {
             .sharpen(40)
             .blur(20)
             .process()
-            .expect("Failed to process image");
+            .expect("unable to process image");
 
         assert!(!result.bytes().is_empty());
     }
@@ -395,7 +395,7 @@ mod tests {
         let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
             .grayscale()
             .process()
-            .expect("Failed to process image");
+            .expect("unable to process image");
 
         assert!(!result.bytes().is_empty());
     }
@@ -406,7 +406,7 @@ mod tests {
             .duotone(0, 50, 100, 255, 165, 0)
             .duotone_alpha(75)
             .process()
-            .expect("Failed to process image");
+            .expect("unable to process image");
 
         assert!(!result.bytes().is_empty());
     }
@@ -416,7 +416,7 @@ mod tests {
         let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
             .rotate(90)
             .process()
-            .expect("Failed to process image");
+            .expect("unable to process image");
 
         assert!(!result.bytes().is_empty());
     }
@@ -426,7 +426,7 @@ mod tests {
         let result = ImageProcessor::new(include_bytes!("../tests/sources/flatten.png"))
             .background(255, 255, 255)
             .process()
-            .expect("Failed to process image");
+            .expect("unable to process image");
 
         assert!(!result.bytes().is_empty());
     }
@@ -441,7 +441,7 @@ mod tests {
             .sharpen(50)
             .vintage(60)
             .process()
-            .expect("Failed to process image");
+            .expect("unable to process image");
 
         assert!(!result.bytes().is_empty());
         assert_eq!(result.format(), Format::Jpeg);
@@ -452,7 +452,7 @@ mod tests {
         let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
             .resize(100, 100)
             .process()
-            .expect("Failed to process image");
+            .expect("unable to process image");
 
         let bytes = result.into_bytes();
         assert!(!bytes.is_empty());
@@ -463,9 +463,251 @@ mod tests {
         let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
             .format(Format::Png)
             .process()
-            .expect("Failed to process image");
+            .expect("unable to process image");
 
         assert_eq!(result.format(), Format::Png);
         assert_eq!(result.mime_type(), "image/png");
+    }
+
+    #[test]
+    fn test_image_processor_width_height() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .width(400)
+            .height(300)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_device_pixel_ratio() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .resize(200, 150)
+            .device_pixel_ratio(2)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_aspect_ratio() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .aspect_ratio(16, 9)
+            .width(400)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_with_background() {
+        let colour = Colour {
+            r: 128,
+            g: 128,
+            b: 128,
+        };
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/flatten.png"))
+            .with_background(colour)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_with_rotation() {
+        let rotation = Rotation(180);
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .with_rotation(rotation)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_lossless() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .format(Format::Webp)
+            .lossless(true)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_trim() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .trim()
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_trim_colour() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .trim_colour(255, 255, 255)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_kodachrome() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .kodachrome(70)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_technicolor() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .technicolor(60)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_polaroid() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .polaroid(50)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_sepia() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .sepia(75)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_tint() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .tint(100, 150, 200)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_with_tint() {
+        let colour = Colour {
+            r: 200,
+            g: 100,
+            b: 50,
+        };
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .with_tint(colour)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_with_duotone() {
+        let duotone = DuotoneColours {
+            shadow: Colour {
+                r: 50,
+                g: 50,
+                b: 100,
+            },
+            highlight: Colour {
+                r: 255,
+                g: 200,
+                b: 100,
+            },
+        };
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .with_duotone(duotone)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_max_megapixels() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .max_megapixels(10.0)
+            .resize(200, 200)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_max_output_resolution() {
+        let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .max_output_resolution(2000)
+            .resize(300, 300)
+            .process()
+            .expect("unable to process image");
+
+        assert!(!result.bytes().is_empty());
+    }
+
+    #[test]
+    fn test_image_processor_options_accessor() {
+        let processor = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
+            .resize(400, 300)
+            .quality(90);
+
+        let options = processor.options();
+        assert_eq!(options.width, Some(400));
+        assert_eq!(options.height, Some(300));
+        assert_eq!(options.quality, Some(90));
+    }
+
+    #[test]
+    fn test_image_processor_options_mut_accessor() {
+        let mut processor = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"));
+
+        processor.options_mut().width = Some(500);
+        processor.options_mut().height = Some(400);
+
+        assert_eq!(processor.options().width, Some(500));
+        assert_eq!(processor.options().height, Some(400));
+    }
+
+    #[test]
+    fn test_image_processor_config_accessor() {
+        let processor =
+            ImageProcessor::new(include_bytes!("../tests/sources/test.jpg")).max_megapixels(5.0);
+
+        let config = processor.config();
+        assert_eq!(config.max_megapixels, Some(5.0));
+    }
+
+    #[test]
+    fn test_image_processor_config_mut_accessor() {
+        let mut processor = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"));
+
+        processor.config_mut().max_megapixels = Some(8.0);
+        processor.config_mut().max_output_resolution = Some(3000);
+
+        assert_eq!(processor.config().max_megapixels, Some(8.0));
+        assert_eq!(processor.config().max_output_resolution, Some(3000));
     }
 }
