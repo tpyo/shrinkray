@@ -9,7 +9,6 @@ authors = ["Don Schonknecht <don@tpyo.net>"]
 repository = "https://github.com/tpyo/shrinkray"
 readme = "README.md"
 license = "MIT"
-license-file = "../../LICENSE"
 build = "build.rs"
 exclude = ["tests/*"]
 categories = ["multimedia::images", "multimedia::encoding", "graphics"]

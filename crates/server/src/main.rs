@@ -82,7 +82,7 @@ async fn handle_image_request(
         // If no options are set, return the original image
         let image = image::Image {
             bytes: image,
-            content_type: options::ImageFormat::Jpeg,
+            content_type: options::Format::Jpeg,
         };
         return Ok((get_headers(&image, options.download.clone())?, image.bytes));
     }
@@ -104,7 +104,7 @@ async fn handle_image_request(
         let result = image::process_image(&image, &mut options, &image_config, span.clone())
             .and_then(|vips_image| {
                 let start = std::time::Instant::now();
-                let output = image::output(&vips_image, &mut options, &image_config)?;
+                let output = image::output(&vips_image, &mut options)?;
                 metrics::output_duration(start.elapsed(), &output.content_type.to_string());
                 Ok(output)
             })
@@ -225,7 +225,7 @@ mod tests {
     use super::*;
     use crate::config::{self, Config, ConfigRouting};
     use crate::image::Image;
-    use crate::options::ImageFormat;
+    use crate::options::Format;
     use axum::http::{HeaderValue, header};
     use axum_test::TestServer;
 
@@ -233,7 +233,7 @@ mod tests {
     fn test_get_headers_with_download() {
         let image = Image {
             bytes: vec![1, 2, 3],
-            content_type: ImageFormat::Png,
+            content_type: Format::Png,
         };
 
         let headers = get_headers(&image, Some("test.png".to_string())).unwrap();

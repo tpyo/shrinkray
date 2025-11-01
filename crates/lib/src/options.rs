@@ -76,7 +76,7 @@ pub struct ImageOptions {
 
     /// Image format
     #[serde(default, rename = "fm", skip_serializing_if = "Option::is_none")]
-    pub format: Option<ImageFormat>,
+    pub format: Option<Format>,
 
     /// Download
     #[serde(default, rename = "dl", skip_serializing_if = "Option::is_none")]
@@ -359,7 +359,32 @@ impl ImageOptions {
 }
 
 #[derive(Debug, Serialize, Clone, Copy, Deserialize, PartialEq)]
-pub struct Percentage(pub i32);
+pub struct Percentage(pub u8);
+
+impl Percentage {
+    /// Create a new Percentage
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is not between 1 and 100
+    pub fn new(value: u8) -> Result<Self, String> {
+        if !(1..=100).contains(&value) {
+            return Err(format!(
+                "percentage must be between 1 and 100, got {}",
+                value
+            ));
+        }
+        Ok(Self(value))
+    }
+}
+
+impl TryFrom<u8> for Percentage {
+    type Error = String;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
 
 impl From<&Percentage> for f64 {
     fn from(val: &Percentage) -> Self {
@@ -371,25 +396,46 @@ fn deserialize_percentage<'de, D>(deserializer: D) -> Result<Option<Percentage>,
 where
     D: Deserializer<'de>,
 {
-    let result = String::deserialize(deserializer);
-    match result {
+    match String::deserialize(deserializer) {
         Ok(value) => {
-            let percentage = value.parse::<i32>().map_err(|err| {
-                serde::de::Error::custom(format!("failed to parse percenpercentagetage: {}", err))
+            let percentage = value.parse::<u8>().map_err(|err| {
+                serde::de::Error::custom(format!("failed to parse percentage: {}", err))
             })?;
-            if !(1..=100).contains(&percentage) {
-                return Err(serde::de::Error::custom(
-                    "percentage must be between 1 and 100",
-                ));
-            }
-            Ok(Some(Percentage(percentage)))
+            Percentage::new(percentage)
+                .map(Some)
+                .map_err(serde::de::Error::custom)
         }
         Err(err) => Err(err),
     }
 }
 
 #[derive(Debug, Serialize, Clone, Deserialize, PartialEq)]
-pub struct Rotation(pub i32);
+pub struct Rotation(pub u16);
+
+impl Rotation {
+    /// Create a new Rotation
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is not 90, 180, or 270
+    pub fn new(value: u16) -> Result<Self, String> {
+        if value != 90 && value != 180 && value != 270 {
+            return Err(format!(
+                "rotation must be one of 90, 180, or 270, got {}",
+                value
+            ));
+        }
+        Ok(Self(value))
+    }
+}
+
+impl TryFrom<u16> for Rotation {
+    type Error = String;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
 
 impl From<&Rotation> for f64 {
     fn from(val: &Rotation) -> Self {
@@ -401,16 +447,10 @@ fn deserialize_rotation<'de, D>(deserializer: D) -> Result<Option<Rotation>, D::
 where
     D: Deserializer<'de>,
 {
-    let result = i32::deserialize(deserializer);
-    match result {
-        Ok(value) => {
-            if value == 90 || value == 180 || value == 270 {
-                return Ok(Some(Rotation(value)));
-            }
-            Err(serde::de::Error::custom(
-                "rotation must be one of 90, 180, or 270",
-            ))
-        }
+    match u16::deserialize(deserializer) {
+        Ok(value) => Rotation::new(value)
+            .map(Some)
+            .map_err(serde::de::Error::custom),
         Err(err) => Err(err),
     }
 }
@@ -422,10 +462,32 @@ pub struct Colour {
     pub b: u8,
 }
 
-#[derive(Debug, Serialize, Clone, Deserialize)]
-pub struct DuotoneColours {
-    pub shadow: Colour,
-    pub highlight: Colour,
+impl Colour {
+    /// Parse a colour from a hex string (e.g., "ff0000" for red)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the hex string is not exactly 6 characters or contains invalid hex characters
+    pub fn from_hex(hex: &str) -> Result<Self, String> {
+        if hex.len() != 6 {
+            return Err(format!(
+                "hex color must be exactly 6 characters, got {}",
+                hex.len()
+            ));
+        }
+        let r = u8::from_str_radix(&hex[0..2], 16)
+            .map_err(|e| format!("invalid hex format for red channel: {}", e))?;
+        let g = u8::from_str_radix(&hex[2..4], 16)
+            .map_err(|e| format!("invalid hex format for green channel: {}", e))?;
+        let b = u8::from_str_radix(&hex[4..6], 16)
+            .map_err(|e| format!("invalid hex format for blue channel: {}", e))?;
+        Ok(Self { r, g, b })
+    }
+
+    /// Convert the colour to a hex string (e.g., "ff0000" for red)
+    pub fn to_hex(&self) -> String {
+        format!("{:02x}{:02x}{:02x}", self.r, self.g, self.b)
+    }
 }
 
 impl Default for Colour {
@@ -438,6 +500,14 @@ impl Default for Colour {
     }
 }
 
+impl TryFrom<&str> for Colour {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Self::from_hex(value)
+    }
+}
+
 impl From<&Colour> for Vec<f64> {
     fn from(val: &Colour) -> Self {
         vec![f64::from(val.r), f64::from(val.g), f64::from(val.b)]
@@ -446,7 +516,34 @@ impl From<&Colour> for Vec<f64> {
 
 impl From<&Colour> for String {
     fn from(val: &Colour) -> Self {
-        format!("{:02x}{:02x}{:02x}", val.r, val.g, val.b)
+        val.to_hex()
+    }
+}
+
+#[derive(Debug, Serialize, Clone, Deserialize)]
+pub struct DuotoneColours {
+    pub shadow: Colour,
+    pub highlight: Colour,
+}
+
+impl DuotoneColours {
+    /// Parse duotone colours from a comma-separated hex string (e.g., "ff0000,00ff00")
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the format is invalid
+    pub fn from_hex(value: &str) -> Result<Self, String> {
+        let parts: Vec<&str> = value.split(',').collect();
+        if parts.len() != 2 {
+            return Err("duotone must contain exactly two comma-separated hex colours".to_string());
+        }
+
+        let shadow = Colour::from_hex(parts[0].trim())
+            .map_err(|e| format!("invalid shadow colour: {}", e))?;
+        let highlight = Colour::from_hex(parts[1].trim())
+            .map_err(|e| format!("invalid highlight colour: {}", e))?;
+
+        Ok(Self { shadow, highlight })
     }
 }
 
@@ -457,18 +554,12 @@ where
     let result = String::deserialize(deserializer);
     match result {
         Ok(value) => {
-            if value.is_empty() || value.len() != 6 {
+            if value.is_empty() {
                 return Ok(None);
             }
-            let r = u8::from_str_radix(&value[0..2], 16)
-                .map_err(|err| serde::de::Error::custom(err.to_string()))?;
-            let g = u8::from_str_radix(&value[2..4], 16)
-                .map_err(|err| serde::de::Error::custom(err.to_string()))?;
-            let b = u8::from_str_radix(&value[4..6], 16)
-                .map_err(|err| serde::de::Error::custom(err.to_string()))?;
-
-            let colour = Colour { r, g, b };
-            Ok(Some(colour))
+            Colour::from_hex(&value)
+                .map(Some)
+                .map_err(serde::de::Error::custom)
         }
         Err(err) => Err(err),
     }
@@ -484,50 +575,9 @@ where
             if value.is_empty() {
                 return Ok(None);
             }
-
-            let parts: Vec<&str> = value.split(',').collect();
-            if parts.len() != 2 {
-                return Err(serde::de::Error::custom(
-                    "duotone must contain exactly two comma-separated hex colours",
-                ));
-            }
-
-            let shadow_hex = parts[0].trim();
-            let highlight_hex = parts[1].trim();
-
-            if shadow_hex.len() != 6 || highlight_hex.len() != 6 {
-                return Err(serde::de::Error::custom(
-                    "each duotone colour must be exactly 6 hex characters",
-                ));
-            }
-
-            let shadow_r = u8::from_str_radix(&shadow_hex[0..2], 16)
-                .map_err(|_| serde::de::Error::custom("invalid hex format in shadow colour"))?;
-            let shadow_g = u8::from_str_radix(&shadow_hex[2..4], 16)
-                .map_err(|_| serde::de::Error::custom("invalid hex format in shadow colour"))?;
-            let shadow_b = u8::from_str_radix(&shadow_hex[4..6], 16)
-                .map_err(|_| serde::de::Error::custom("invalid hex format in shadow colour"))?;
-
-            let highlight_r = u8::from_str_radix(&highlight_hex[0..2], 16)
-                .map_err(|_| serde::de::Error::custom("invalid hex format in highlight colour"))?;
-            let highlight_g = u8::from_str_radix(&highlight_hex[2..4], 16)
-                .map_err(|_| serde::de::Error::custom("invalid hex format in highlight colour"))?;
-            let highlight_b = u8::from_str_radix(&highlight_hex[4..6], 16)
-                .map_err(|_| serde::de::Error::custom("invalid hex format in highlight colour"))?;
-
-            let duotone_colours = DuotoneColours {
-                shadow: Colour {
-                    r: shadow_r,
-                    g: shadow_g,
-                    b: shadow_b,
-                },
-                highlight: Colour {
-                    r: highlight_r,
-                    g: highlight_g,
-                    b: highlight_b,
-                },
-            };
-            Ok(Some(duotone_colours))
+            DuotoneColours::from_hex(&value)
+                .map(Some)
+                .map_err(serde::de::Error::custom)
         }
         Err(err) => Err(err),
     }
@@ -535,7 +585,7 @@ where
 
 #[derive(Debug, Display, PartialEq, Serialize, Deserialize, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
-pub enum ImageFormat {
+pub enum Format {
     #[strum(serialize = "avif")]
     Avif,
     #[strum(serialize = "jpeg")]
@@ -546,14 +596,14 @@ pub enum ImageFormat {
     Png,
 }
 
-impl ImageFormat {
+impl Format {
     #[must_use]
     pub fn content_type(self) -> &'static str {
         match self {
-            ImageFormat::Avif => "image/avif",
-            ImageFormat::Jpeg => "image/jpeg",
-            ImageFormat::Webp => "image/webp",
-            ImageFormat::Png => "image/png",
+            Format::Avif => "image/avif",
+            Format::Jpeg => "image/jpeg",
+            Format::Webp => "image/webp",
+            Format::Png => "image/png",
         }
     }
 }
@@ -577,8 +627,24 @@ pub struct AspectRatio {
 }
 
 impl AspectRatio {
+    /// Create a new AspectRatio
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if either x or y is zero
     #[inline]
-    fn new(x: i32, y: i32) -> Self {
+    pub fn new(x: i32, y: i32) -> Result<Self, String> {
+        if x == 0 {
+            return Err("aspect ratio numerator cannot be zero".to_string());
+        }
+        if y == 0 {
+            return Err("aspect ratio denominator cannot be zero".to_string());
+        }
+        Ok(AspectRatio::from_dimensions(x, y))
+    }
+
+    #[inline]
+    pub(crate) fn from_dimensions(x: i32, y: i32) -> Self {
         Self {
             ratio: f64::from(x) / f64::from(y),
             x,
@@ -622,7 +688,7 @@ impl From<&mut ImageOptions> for ops::HeifsaveBufferOptions {
             effort: 4,
             ..Default::default()
         };
-        if let Some(ImageFormat::Avif) = options.format {
+        if let Some(Format::Avif) = options.format {
             opts.compression = ops::ForeignHeifCompression::Av1;
             opts.bitdepth = 8;
         }
@@ -690,13 +756,9 @@ where
                 && let (Ok(numerator), Ok(denominator)) =
                     (parts[0].parse::<i32>(), parts[1].parse::<i32>())
             {
-                if denominator == 0 {
-                    return Err(serde::de::Error::custom("denominator cannot be zero"));
-                }
-                if numerator == 0 {
-                    return Err(serde::de::Error::custom("numerator cannot be zero"));
-                }
-                return Ok(Some(AspectRatio::new(numerator, denominator)));
+                return AspectRatio::new(numerator, denominator)
+                    .map(Some)
+                    .map_err(serde::de::Error::custom);
             }
             Err(serde::de::Error::custom("invalid aspect ratio"))
         }
@@ -724,7 +786,8 @@ fn calculate_crop_dimensions(
     aspect_ratio: Option<AspectRatio>,
 ) -> (i32, i32) {
     // Use the given `ar` or default to the image's aspect ratio
-    let ar = aspect_ratio.unwrap_or(AspectRatio::new(image_width, image_height));
+    let ar =
+        aspect_ratio.unwrap_or_else(|| AspectRatio::from_dimensions(image_width, image_height));
     match (image_options.width, image_options.height) {
         // If no constraints are provided, use the original dimensions
         (None, None) => (image_width, image_height),
@@ -747,7 +810,8 @@ fn calculate_clip_dimensions(
     image_height: i32,
     aspect_ratio: Option<AspectRatio>,
 ) -> (i32, i32) {
-    let ar = aspect_ratio.unwrap_or(AspectRatio::new(image_width, image_height));
+    let ar =
+        aspect_ratio.unwrap_or_else(|| AspectRatio::from_dimensions(image_width, image_height));
     match (image_options.width, image_options.height) {
         // If no constraints are provided, use the original dimensions
         (None, None) => (image_width, image_height),
@@ -760,7 +824,7 @@ fn calculate_clip_dimensions(
 
         // If both width and height are provided, fit within the bounding box
         (Some(width), Some(height)) => {
-            let target_aspect_ratio = AspectRatio::new(width, height);
+            let target_aspect_ratio = AspectRatio::from_dimensions(width, height);
             if target_aspect_ratio > ar {
                 (height * ar, height)
             } else {
@@ -777,7 +841,8 @@ fn calculate_max_dimensions(
     image_height: i32,
     aspect_ratio: Option<AspectRatio>,
 ) -> (i32, i32) {
-    let ar = aspect_ratio.unwrap_or(AspectRatio::new(image_width, image_height));
+    let ar =
+        aspect_ratio.unwrap_or_else(|| AspectRatio::from_dimensions(image_width, image_height));
     match (image_options.width, image_options.height) {
         // If no constraints are provided, use the original dimensions
         (None, None) => (image_width, image_height),
@@ -798,7 +863,7 @@ fn calculate_max_dimensions(
 
         // Constrained by both width and height, but do not upscale
         (Some(width), Some(height)) => {
-            let target_aspect_ratio = AspectRatio::new(width, height);
+            let target_aspect_ratio = AspectRatio::from_dimensions(width, height);
 
             if target_aspect_ratio > ar {
                 // Fit by height
@@ -820,7 +885,10 @@ pub fn calculate_dimensions(image_options: &mut ImageOptions, image_width: i32, 
 
     let aspect_ratio = match image_options.aspect_ratio.clone() {
         Some(ar) => Some(ar),
-        None => Some(AspectRatio::new(image_width * dpr, image_height * dpr)),
+        None => Some(AspectRatio::from_dimensions(
+            image_width * dpr,
+            image_height * dpr,
+        )),
     };
 
     // Determine the new dimensions based on the `fit` parameter
@@ -909,11 +977,11 @@ mod tests {
             width: Some(300),
             height: Some(200),
             quality: Some(80),
-            aspect_ratio: Some(AspectRatio::new(16, 9)),
+            aspect_ratio: Some(AspectRatio::from_dimensions(16, 9)),
             device_pixel_ratio: Some(2),
             fit: Some(Fit::Crop),
             background: Some(Colour { r: 255, g: 0, b: 0 }),
-            format: Some(ImageFormat::Jpeg),
+            format: Some(Format::Jpeg),
             download: Some("image.jpg".to_string()),
             trim: Some(Trim::Auto),
             trim_colour: Some(Colour { r: 0, g: 255, b: 0 }),
@@ -1092,7 +1160,7 @@ mod tests {
 
     #[test]
     fn test_aspect_ratio_new() {
-        let ar = AspectRatio::new(16, 9);
+        let ar = AspectRatio::new(16, 9).unwrap();
         assert_eq!(ar.x, 16);
         assert_eq!(ar.y, 9);
         assert!((ar.ratio - (16.0 / 9.0)).abs() < 0.0001);
@@ -1100,20 +1168,20 @@ mod tests {
 
     #[test]
     fn test_aspect_ratio_display() {
-        let ar = AspectRatio::new(16, 9);
+        let ar = AspectRatio::from_dimensions(16, 9);
         assert_eq!(ar.to_string(), "16:9");
     }
 
     #[test]
     fn test_aspect_ratio_div() {
-        let ar = AspectRatio::new(16, 9);
+        let ar = AspectRatio::from_dimensions(16, 9);
         let result = 320 / ar;
         assert_eq!(result, 180);
     }
 
     #[test]
     fn test_aspect_ratio_mul() {
-        let ar = AspectRatio::new(16, 9);
+        let ar = AspectRatio::from_dimensions(16, 9);
         let result = 180 * ar;
         assert_eq!(result, 320);
     }
@@ -1200,7 +1268,7 @@ mod tests {
         let mut options = ImageOptions {
             quality: Some(90),
             lossless: Some(true),
-            format: Some(ImageFormat::Avif),
+            format: Some(Format::Avif),
             ..Default::default()
         };
         let heif_opts: ops::HeifsaveBufferOptions = (&mut options).into();

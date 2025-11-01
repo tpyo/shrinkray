@@ -1,5 +1,5 @@
 use crate::config::ImageConfig;
-use crate::options::{self, Percentage};
+use crate::options;
 use libvips::ops;
 use libvips::{Result as VipsResult, VipsImage};
 use std::mem::discriminant;
@@ -7,11 +7,11 @@ use tracing::{error, warn};
 
 pub struct Image {
     pub bytes: Vec<u8>,
-    pub content_type: options::ImageFormat,
+    pub content_type: options::Format,
 }
 
 #[tracing::instrument(skip_all)]
-pub fn flatten(image: &VipsImage, colour: &options::Colour) -> VipsResult<VipsImage> {
+fn flatten(image: &VipsImage, colour: &options::Colour) -> VipsResult<VipsImage> {
     if image.image_hasalpha() {
         let opts = ops::FlattenOptions {
             background: colour.into(),
@@ -71,7 +71,7 @@ fn trim(image: &VipsImage, options: &options::ImageOptions) -> VipsResult<VipsIm
     }
 }
 
-fn percent_to_value(p: i32, min: f64, max: f64) -> f64 {
+fn percent_to_value(p: u8, min: f64, max: f64) -> f64 {
     if (max - min).abs() < f64::EPSILON {
         return min;
     }
@@ -81,7 +81,7 @@ fn percent_to_value(p: i32, min: f64, max: f64) -> f64 {
 
 #[tracing::instrument(skip_all)]
 fn sharpen(image: &VipsImage, options: &mut options::ImageOptions) -> VipsResult<VipsImage> {
-    let percentage = options.sharpen.unwrap_or(Percentage(1));
+    let percentage = options.sharpen.unwrap_or(options::Percentage(1));
     // min: 0.000001, max: 10, default: 0.5
     let sigma = percent_to_value(percentage.0, 0.000_001, 10.0);
     let opts = ops::SharpenOptions {
@@ -93,7 +93,7 @@ fn sharpen(image: &VipsImage, options: &mut options::ImageOptions) -> VipsResult
 
 #[tracing::instrument(skip_all)]
 fn blur(image: &VipsImage, options: &mut options::ImageOptions) -> VipsResult<VipsImage> {
-    let percentage = options.blur.unwrap_or(Percentage(1));
+    let percentage = options.blur.unwrap_or(options::Percentage(1));
     // min: 0, max: 1000, default: 1.5
     let sigma = percent_to_value(percentage.0, 0.0, 50.0);
     let opts = ops::GaussblurOptions {
@@ -263,30 +263,26 @@ pub fn process_image(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn output(
-    image: &VipsImage,
-    options: &mut options::ImageOptions,
-    _config: &ImageConfig,
-) -> VipsResult<Image> {
-    let format = options.format.unwrap_or(options::ImageFormat::Jpeg);
+pub fn output(image: &VipsImage, options: &mut options::ImageOptions) -> VipsResult<Image> {
+    let format = options.format.unwrap_or(options::Format::Jpeg);
     tracing::Span::current().record("shrinkray.format", format.to_string());
 
     match format {
-        options::ImageFormat::Jpeg => Ok(Image {
+        options::Format::Jpeg => Ok(Image {
             bytes: ops::jpegsave_buffer_with_opts(image, &options.into())?,
-            content_type: options::ImageFormat::Jpeg,
+            content_type: options::Format::Jpeg,
         }),
-        options::ImageFormat::Webp => Ok(Image {
+        options::Format::Webp => Ok(Image {
             bytes: ops::webpsave_buffer_with_opts(image, &options.into())?,
-            content_type: options::ImageFormat::Webp,
+            content_type: options::Format::Webp,
         }),
-        options::ImageFormat::Avif => Ok(Image {
+        options::Format::Avif => Ok(Image {
             bytes: ops::heifsave_buffer_with_opts(image, &options.into())?,
-            content_type: options::ImageFormat::Avif,
+            content_type: options::Format::Avif,
         }),
-        options::ImageFormat::Png => Ok(Image {
+        options::Format::Png => Ok(Image {
             bytes: ops::pngsave_buffer_with_opts(image, &options.into())?,
-            content_type: options::ImageFormat::Png,
+            content_type: options::Format::Png,
         }),
     }
 }
@@ -395,7 +391,7 @@ fn apply_style(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn tint(image: &VipsImage, colour: &options::Colour) -> VipsResult<VipsImage> {
+fn tint(image: &VipsImage, colour: &options::Colour) -> VipsResult<VipsImage> {
     let type_before_tint = image.get_interpretation()?;
 
     // Extract alpha channel if present
@@ -468,7 +464,7 @@ pub fn tint(image: &VipsImage, colour: &options::Colour) -> VipsResult<VipsImage
 }
 
 #[tracing::instrument(skip_all)]
-pub fn duotone(
+fn duotone(
     image: &VipsImage,
     shadow_colour: &options::Colour,
     highlight_colour: &options::Colour,
@@ -643,7 +639,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -669,7 +665,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -704,7 +700,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -740,7 +736,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -764,7 +760,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -788,7 +784,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -816,7 +812,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -840,7 +836,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -864,7 +860,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -888,7 +884,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -912,7 +908,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -936,7 +932,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -960,7 +956,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -984,7 +980,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
@@ -1008,7 +1004,7 @@ mod tests {
         )
         .expect("unable to process image");
 
-        let img = output(&vips_image, &mut opts, &config)
+        let img = output(&vips_image, &mut opts)
             .expect("unable to output image")
             .bytes;
 
