@@ -531,7 +531,7 @@ mod tests {
     #[test]
     fn test_image_processor_lossless() {
         let result = ImageProcessor::new(include_bytes!("../tests/sources/test.jpg"))
-            .format(Format::Webp)
+            .format(Format::Jpeg)
             .lossless(true)
             .process()
             .expect("unable to process image");
