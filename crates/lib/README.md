@@ -16,11 +16,8 @@ A high-performance Rust library for image processing powered by [libvips](https:
 
 ## Installation
 
-Add this to your `Cargo.toml`:
-
-```toml
-[dependencies]
-shrinkray = "1.0.1"
+```bash
+cargo add shrinkray
 ```
 
 ### System Dependencies

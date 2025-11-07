@@ -6,7 +6,32 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![codecov](https://codecov.io/github/tpyo/shrinkray/graph/badge.svg?token=BXFB15WSLA)](https://codecov.io/github/tpyo/shrinkray)
 
-Shrinkray is a lightweight, high-performance image proxy written in Rust.
+Shrinkray is a high-performance image processing toolkit for Rust, consisting of:
+
+- **[shrinkray](crates/lib)** - A fast image processing library powered by libvips
+- **[shrinkray-server](crates/server)** - A lightweight image proxy server for on-the-fly transformations
+
+## Library
+
+Use the [shrinkray library](crates/lib) to integrate image processing directly into your Rust applications:
+
+```rust
+use shrinkray::ImageProcessor;
+use shrinkray::options::{Format, Fit};
+
+let result = ImageProcessor::new(&image_bytes)
+    .resize(800, 600)
+    .quality(85)
+    .format(Format::Webp)
+    .fit(Fit::Crop)
+    .process()?;
+```
+
+See the [library documentation](crates/lib) for full API details and examples.
+
+## Server
+
+The [shrinkray-server](crates/server) provides an HTTP service for on-the-fly image transformations:
 
 ### Features
 
@@ -30,7 +55,7 @@ Shrinkray draws inspiration from other great image processing services, includin
 - [imgproxy](https://github.com/imgproxy/imgproxy) – a high-performance Golang image proxy
 - [imgix](https://www.imgix.com) – a commercial image optimization platform
 
-## Running shrinkray
+## Running the Server
 
 ### Kubernetes Deployment
 
