@@ -36,5 +36,5 @@ strum = { version = "0.27.2", features = ["derive"] }
 tracing = "0.1.41"
 
 [dev-dependencies]
-axum = { version = "0.8.1", default-features = false, features = ["query"] }
+axum = { version = "0.8.7", default-features = false, features = ["query"] }
 rstest = "0.26.1"
