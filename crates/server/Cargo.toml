@@ -54,7 +54,7 @@ tracing-subscriber = { version = "0.3.20", features = ["json", "env-filter"] }
 url = "2.5.7"
 
 [dev-dependencies]
-axum-test = "18.3.0"
+axum-test = "18.4.1"
 mockito = "1.7.1"
 regex = "1.12.2"
 tracing-test = "0.2.5"
