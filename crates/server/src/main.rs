@@ -197,8 +197,8 @@ async fn run_management_server(
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     let config = read_config();
-    if config.is_err() {
-        eprintln!("failed to read configuration: {}", config.unwrap_err());
+    if let Err(e) = config {
+        eprintln!("failed to read configuration: {}", e);
         std::process::exit(1);
     }
 
