@@ -50,7 +50,7 @@ thiserror = "2.0.17"
 tokio = { version = "1.48.0", default-features = false, features = ["full"] }
 tracing = "0.1.43"
 tracing-opentelemetry = "0.32.0"
-tracing-subscriber = { version = "0.3.20", features = ["json", "env-filter"] }
+tracing-subscriber = { version = "0.3.22", features = ["json", "env-filter"] }
 url = "2.5.7"
 
 [dev-dependencies]
