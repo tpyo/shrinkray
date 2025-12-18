@@ -28,6 +28,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: docker-ce
+
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: llvm-tools-preview
