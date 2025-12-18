@@ -23,6 +23,7 @@ RUN apt-get update -qq && \
     meson \
     git-core \
     git \
+    gpg \
     libjemalloc-dev \
     liborc-dev \
     libde265-dev \
