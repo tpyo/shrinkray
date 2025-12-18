@@ -11,6 +11,13 @@ Shrinkray is a high-performance image processing toolkit for Rust, consisting of
 - **[shrinkray](crates/lib)** - A fast image processing library powered by libvips
 - **[shrinkray-server](crates/server)** - A lightweight image proxy server for on-the-fly transformations
 
+## Requirements
+
+- **libvips 8.17.0 or higher** is required for version 1.0.2 and above
+- For older libvips versions (8.16.x), use shrinkray 1.0.1
+
+See the [library documentation](crates/lib#system-dependencies) for installation instructions.
+
 ## Library
 
 Use the [shrinkray library](crates/lib) to integrate image processing directly into your Rust applications:

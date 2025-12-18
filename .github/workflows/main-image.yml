@@ -20,6 +20,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: public.ecr.aws/tpyo/shrinkray/base:latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -29,10 +31,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: llvm-tools-preview
-
-      - uses: awalsh128/cache-apt-pkgs-action@v1
-        with:
-          packages: libvips libvips-dev
 
       - uses: actions/cache@v5
         with:
@@ -47,6 +45,8 @@ jobs:
 
       - name: Generate code coverage
         run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+        env:
+          SHRINKRAY_LIB_PATH: /opt/shrinkray/lib
 
       - name: Codecov
         uses: codecov/codecov-action@v5

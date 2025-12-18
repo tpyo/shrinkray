@@ -22,7 +22,7 @@ cargo add shrinkray
 
 ### System Dependencies
 
-This library requires libvips to be installed on your system:
+This library requires **libvips 8.17.0 or higher** to be installed on your system.  For older libvips versions (8.16.x), use shrinkray 1.0.1.
 
 **macOS:**
 ```bash
