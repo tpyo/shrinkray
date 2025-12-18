@@ -307,8 +307,6 @@ fn resize(
 ) -> VipsResult<VipsImage> {
     let scale = options.get_resize_scale(image_width, image_height);
     let mut thumbnail_options = ops::ThumbnailImageOptions {
-        import_profile: "sRGB".to_string(),
-        export_profile: "sRGB".to_string(),
         crop: ops::Interesting::Centre,
         linear: false,
         size: ops::Size::Both,
