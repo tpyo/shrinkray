@@ -65,3 +65,21 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
+
+  publish:
+    runs-on: ubuntu-latest
+    container:
+      image: public.ecr.aws/tpyo/shrinkray/base:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+        env:
+          SHRINKRAY_LIB_PATH: /opt/shrinkray/lib
