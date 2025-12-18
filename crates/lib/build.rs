@@ -6,7 +6,7 @@ fn main() {
         println!(r"cargo:rustc-link-search=native={path}");
     }
 
-    if let Some((major, minor, patch)) = detect_libvips_version() {
+    if let Some((major, minor, _patch)) = detect_libvips_version() {
         // libvips version 8.17.0 introduced a breaking change to
         // profile parameter names used in thumbnailing functions.
         // See https://github.com/libvips/libvips/pull/4488
