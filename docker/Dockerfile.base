@@ -1,10 +1,10 @@
 FROM --platform=linux/amd64 rust:1.90.0-slim-bookworm
 
-ARG svt_av1_version=v3.1.2
-ARG rav1e_version=v0.8.1
+#ARG svt_av1_version=v3.1.2
+#ARG rav1e_version=v0.8.1
 ARG libaom_version=v3.13.1
 ARG libheif_version=v1.20.2
-ARG libvips_version=v8.17.2
+ARG libvips_version=v8.18.0
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
@@ -62,25 +62,25 @@ RUN make install
 RUN cp aom.pc /opt/shrinkray/lib/pkgconfig/
 RUN pkg-config aom
 
-RUN mkdir /tmp/rav1e
-WORKDIR /opt/rav1e
-RUN git clone -b ${rav1e_version} --depth 1 https://github.com/xiph/rav1e.git .
-RUN cargo install cargo-c
-RUN cargo cinstall --crt-static --release --prefix="/opt/shrinkray" --library-type=staticlib
-RUN cp target/x86_64-unknown-linux-gnu/release/rav1e.pc /opt/shrinkray/lib/pkgconfig/
-RUN pkg-config rav1e
+# RUN mkdir /tmp/rav1e
+# WORKDIR /opt/rav1e
+# RUN git clone -b ${rav1e_version} --depth 1 https://github.com/xiph/rav1e.git .
+# RUN cargo install cargo-c
+# RUN cargo cinstall --crt-static --release --prefix="/opt/shrinkray" --library-type=staticlib
+# RUN cp target/x86_64-unknown-linux-gnu/release/rav1e.pc /opt/shrinkray/lib/pkgconfig/
+# RUN pkg-config rav1e
 
-RUN mkdir -p /opt/SVT-AV1
-WORKDIR /opt/SVT-AV1
-RUN apt install -y nasm
-RUN git clone -b ${svt_av1_version} --depth 1 https://gitlab.com/AOMediaCodec/SVT-AV1.git .
-RUN ./Build/linux/build.sh release static no-apps prefix=/opt/shrinkray install
-RUN cp Build/linux/Release/SvtAv1Enc.pc /opt/shrinkray/lib/pkgconfig/
-RUN pkg-config SvtAv1Enc
+# RUN mkdir -p /opt/SVT-AV1
+# WORKDIR /opt/SVT-AV1
+# RUN apt install -y nasm
+# RUN git clone -b ${svt_av1_version} --depth 1 https://gitlab.com/AOMediaCodec/SVT-AV1.git .
+# RUN ./Build/linux/build.sh release static no-apps prefix=/opt/shrinkray install
+# RUN cp Build/linux/Release/SvtAv1Enc.pc /opt/shrinkray/lib/pkgconfig/
+# RUN pkg-config SvtAv1Enc
 
 WORKDIR /opt/libheif
 RUN git clone --branch ${libheif_version} --depth 1 https://github.com/strukturag/libheif.git .
-RUN cmake -DCMAKE_INSTALL_PREFIX=/opt/shrinkray -DCMAKE_BUILD_TYPE=Release -DWITH_EXAMPLES=0 -DWITH_SvtEnc=1 -DWITH_RAV1E=1
+RUN cmake -DCMAKE_INSTALL_PREFIX=/opt/shrinkray -DCMAKE_BUILD_TYPE=Release -DWITH_EXAMPLES=0 -DWITH_SvtEnc=0 -DWITH_RAV1E=0
 RUN make -j$(nproc)
 RUN make install
 RUN cp libheif.pc /opt/shrinkray/lib/pkgconfig/
