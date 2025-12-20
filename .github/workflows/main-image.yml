@@ -86,7 +86,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: public.ecr.aws/${{ env.REGISTRY_ALIAS }}/${{ env.REPOSITORY }}
+          images: ghcr.io/${{ github.repository }}/server
           tags: |
             type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
