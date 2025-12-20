@@ -11,8 +11,8 @@ fn main() {
         // profile parameter names used in thumbnailing functions.
         // See https://github.com/libvips/libvips/pull/4488
         if major < 8 || (major == 8 && minor < 17) {
-            panic!(
-                "\nERROR:\nlibvips version 8.17.0 or higher is required for shrinkray v1.0.2+, for older libvips versions, use shrinkray v1.0.1.\n"
+            println!(
+                "cargo:warning=libvips version 8.17.0 or higher is required for shrinkray v1.0.2+, for older libvips versions, use shrinkray v1.0.1."
             );
         }
     } else {
