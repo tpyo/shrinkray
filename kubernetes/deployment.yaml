@@ -90,7 +90,7 @@ spec:
             name: shrinkray
       containers:
         - name: shrinkray
-          image: public.ecr.aws/tpyo/shrinkray/server:latest
+          image: ghcr.io/tpyo/shrinkray/server:latest
           ports:
             - containerPort: 9000
               name: shrinkray

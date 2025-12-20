@@ -21,7 +21,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     container:
-      image: public.ecr.aws/tpyo/shrinkray/base:latest
+      image: ghcr.io/${{ github.repository }}/base:latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
