@@ -19,6 +19,9 @@ env:
 jobs:
   base-image-build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
