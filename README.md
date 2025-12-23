@@ -1,6 +1,7 @@
 # shrinkray
 
 [![crates.io](https://img.shields.io/crates/v/shrinkray.svg)](https://crates.io/crates/shrinkray)
+[![docs.rs](https://img.shields.io/docsrs/shrinkray)](https://docs.rs/shrinkray/latest/shrinkray/)
 [![Main image](https://github.com/tpyo/shrinkray/actions/workflows/main-image.yml/badge.svg)](https://github.com/tpyo/shrinkray/actions/workflows/main-image.yml)
 [![Release image](https://github.com/tpyo/shrinkray/actions/workflows/tag-image.yml/badge.svg)](https://github.com/tpyo/shrinkray/actions/workflows/tag-image.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
