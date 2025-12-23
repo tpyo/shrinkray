@@ -51,7 +51,7 @@ The [shrinkray-server](crates/server) provides an HTTP service for on-the-fly im
 
 - Offload image resizing logic from your app server
 - Serve responsive images without storing multiple variants
-- Optimize external images at request time
+- Optimise external images at request time
 - Use as a backend to a CDN for on-demand image transformation
 
 ### Inspiration
@@ -60,7 +60,7 @@ Shrinkray draws inspiration from other great image processing services, includin
 
 - [dali](https://github.com/olxgroup-oss/dali) – a flexible image server
 - [imgproxy](https://github.com/imgproxy/imgproxy) – a high-performance Golang image proxy
-- [imgix](https://www.imgix.com) – a commercial image optimization platform
+- [imgix](https://www.imgix.com) – a commercial image optimisation platform
 
 ## Running the Server
 
