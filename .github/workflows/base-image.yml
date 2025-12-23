@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         variant:
-          - { name: slim-bookworm, dockerfile: Dockerfile.base-slim-bookworm, suffix: "-slim-bookworm" }
+          - { name: slim-bookworm, dockerfile: Dockerfile.base-slim-bookworm, suffix: "" }
           - { name: alpine, dockerfile: Dockerfile.base-alpine, suffix: "-alpine" }
     steps:
       - name: Checkout
@@ -57,7 +57,7 @@ jobs:
       - name: Set up Docker buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build docker image (${{ matrix.variant.name }})
+      - name: Build Docker image (${{ matrix.variant.name }})
         uses: docker/build-push-action@v6
         with:
           push: true
