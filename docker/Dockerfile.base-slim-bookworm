@@ -57,7 +57,15 @@ WORKDIR /opt/libaom
 RUN git clone --branch ${libaom_version} --depth 1 https://aomedia.googlesource.com/aom .
 RUN mkdir -p ../aom_build
 WORKDIR /opt/libaom/aom_build
-RUN cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="/opt/shrinkray" -DBUILD_SHARED_LIBS=off -DENABLE_TOOLS=off -DENABLE_DOCS=off -DENABLE_EXAMPLES=off -DENABLE_TESTS=off -DENABLE_NASM=on -DCMAKE_BUILD_TYPE=Release ../
+RUN cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="/opt/shrinkray" \
+    -DBUILD_SHARED_LIBS=off \
+    -DENABLE_TOOLS=off \
+    -DENABLE_DOCS=off \
+    -DENABLE_EXAMPLES=off \
+    -DENABLE_TESTS=off \
+    -DENABLE_NASM=on \
+    -DCMAKE_BUILD_TYPE=Release \
+    ../
 RUN make -j$(nproc)
 RUN make install
 RUN cp aom.pc /opt/shrinkray/lib/pkgconfig/
@@ -81,7 +89,7 @@ RUN pkg-config aom
 
 WORKDIR /opt/libheif
 RUN git clone --branch ${libheif_version} --depth 1 https://github.com/strukturag/libheif.git .
-RUN cmake -DCMAKE_INSTALL_PREFIX=/opt/shrinkray -DCMAKE_BUILD_TYPE=Release -DWITH_EXAMPLES=0 -DWITH_SvtEnc=0 -DWITH_RAV1E=0
+RUN cmake -DCMAKE_INSTALL_PREFIX=/opt/shrinkray -DCMAKE_BUILD_TYPE=Release -DWITH_EXAMPLES=0 -DWITH_SvtEnc=0 -DWITH_RAV1E=0 .
 RUN make -j$(nproc)
 RUN make install
 RUN cp libheif.pc /opt/shrinkray/lib/pkgconfig/
