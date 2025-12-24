@@ -69,6 +69,20 @@ Shrinkray draws inspiration from other great image processing services, includin
 
 ## Running the Server
 
+### Docker Standalone
+
+Run the Docker image standalone with your own configuration:
+
+```bash
+docker run -p 9000:9000 -p 9001:9001 -v $(pwd)/config/config.json:/opt/shrinkray/etc/config.json ghcr.io/tpyo/shrinkray/server:latest /opt/shrinkray/etc/config.json
+```
+
+This mounts your local `config/config.json` file to the expected location in the container and starts a server listening on http://localhost:9000.
+
+**Available image variants:**
+- `latest` - Debian slim-bookworm based image
+- `latest-alpine` - Alpine Linux based image (smaller size)
+
 ### Kubernetes Deployment
 
 Download and edit the Kubernetes [config file](https://github.com/tpyo/shrinkray/blob/main/kubernetes/config.yaml):
