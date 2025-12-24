@@ -1921,7 +1921,7 @@ dependencies = [
 
 [[package]]
 name = "shrinkray-server"
-version = "1.0.2"
+version = "1.0.4"
 dependencies = [
  "async-trait",
  "aws-sign-v4",
