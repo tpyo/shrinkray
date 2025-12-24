@@ -12,6 +12,17 @@ Shrinkray is a high-performance image processing toolkit for Rust, consisting of
 - **[shrinkray](crates/lib)** - A fast image processing library powered by libvips
 - **[shrinkray-server](crates/server)** - A lightweight image proxy server for on-the-fly transformations
 
+## Requirements
+
+- **libvips 8.17.0 or higher** (for older 8.16.x libvips versions use shrinkray 1.0.1)
+- libaom (for AVIF support via libheif)
+- libheif
+- libjpeg
+- libpng
+- libwebp
+
+For more information on installing the required dependencies, see the [Ubuntu](https://github.com/tpyo/shrinkray/blob/main/docker/Dockerfile.base-slim-bookworm) and [Alpine](https://github.com/tpyo/shrinkray/blob/main/docker/Dockerfile.base-alpine) base images.
+
 ## Library
 
 Use the [shrinkray library](crates/lib) to integrate image processing directly into your Rust applications:
@@ -29,17 +40,6 @@ let result = ImageProcessor::new(&image_bytes)
 ```
 
 See the [library documentation](crates/lib) for full API details and examples.
-
-## Requirements
-
-- **libvips 8.17.0 or higher** (for older 8.16.x libvips versions use shrinkray 1.0.1)
-- libaom (for AVIF support via libheif)
-- libheif
-- libjpeg
-- libpng
-- libwebp
-
-For more information on installing the required dependencies, see the [Ubuntu](https://github.com/tpyo/shrinkray/blob/main/docker/Dockerfile.base-slim-bookworm) and [Alpine](https://github.com/tpyo/shrinkray/blob/main/docker/Dockerfile.base-alpine) base images.
 
 ## Server
 
