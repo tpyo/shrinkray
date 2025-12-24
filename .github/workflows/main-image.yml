@@ -58,7 +58,7 @@ jobs:
           verbose: true
           fail_ci_if_error: true
   build:
-    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm64' }}
+    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     permissions:
       contents: read
       packages: write
