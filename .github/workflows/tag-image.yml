@@ -46,9 +46,6 @@ jobs:
           flavor: |
             latest=false
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker buildx
         uses: docker/setup-buildx-action@v3
 
@@ -58,11 +55,10 @@ jobs:
           push: true
           context: .
           file: ./docker/${{ matrix.variant.dockerfile }}
-          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.variant.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.variant.name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           provenance: false
 
   publish:
