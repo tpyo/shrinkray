@@ -26,6 +26,8 @@ RUN apk add --no-cache \
     lcms2 \
     libexif \
     libwebp \
+    libwebpmux \
+    libwebpdemux \
     libjpeg-turbo \
     librsvg \
     highway \

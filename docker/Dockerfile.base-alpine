@@ -36,6 +36,8 @@ RUN apk add --no-cache \
     expat-dev \
     libexif-dev \
     libwebp-dev \
+    libwebpmux \
+    libwebpdemux \
     openssl \
     texinfo \
     zlib-dev \
