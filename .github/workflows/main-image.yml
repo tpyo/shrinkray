@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths-ignore:
-      - "README.md"
-      - "docker/Dockerfile.base-**"
+      - README.md
+      - docker/Dockerfile.base-**
       - .github/workflows/base-image.yml
 
 concurrency:

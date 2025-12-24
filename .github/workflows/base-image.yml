@@ -5,8 +5,7 @@ on:
     branches:
       - main
     paths:
-      - docker/Dockerfile.base-slim-bookworm
-      - docker/Dockerfile.base-alpine
+      - docker/Dockerfile.base-**
       - .github/workflows/base-image.yml
 
 concurrency:
