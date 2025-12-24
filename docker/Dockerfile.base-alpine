@@ -93,14 +93,3 @@ RUN meson setup build-dir \
 WORKDIR /opt/libvips/build-dir
 RUN ninja
 RUN ninja install
-
-WORKDIR /build
-
-COPY Cargo.toml .
-COPY Cargo.lock .
-COPY ./crates ./crates
-
-ENV RUSTFLAGS="-L /usr/lib -C target-feature=-crt-static"
-
-RUN cargo build --config net.git-fetch-with-cli=true --release -p shrinkray-server
-
