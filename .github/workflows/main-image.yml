@@ -59,7 +59,7 @@ jobs:
           verbose: true
           fail_ci_if_error: true
   build:
-    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -80,7 +80,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.variant.name }}-${{ matrix.platform }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.variant.name }}
 
       - name: Login to GHCR
         uses: docker/login-action@v3
