@@ -1,4 +1,4 @@
-name: Main image
+name: Main
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
     paths-ignore:
       - "README.md"
-      - "docker/Dockerfile.base"
+      - "docker/Dockerfile.base-**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,8 +14,6 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  REGISTRY_ALIAS: g0j7o9w1
-  REPOSITORY: shrinkray/server
 
 jobs:
   coverage:
@@ -60,10 +58,18 @@ jobs:
           verbose: true
           fail_ci_if_error: true
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm64' }}
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        variant:
+          - { name: slim-bookworm, dockerfile: Dockerfile.slim-bookworm, suffix: "" }
+          - { name: alpine, dockerfile: Dockerfile.alpine, suffix: "-alpine" }
+        platform:
+          - amd64
+          - arm64
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -76,7 +82,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.variant.name }}-${{ matrix.platform }}
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -91,21 +97,25 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}/server
           tags: |
-            type=ref,event=branch
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha
+            type=ref,event=branch,suffix=${{ matrix.variant.suffix }}
+            type=raw,value=latest${{ matrix.variant.suffix }},enable={{is_default_branch}}
+            type=sha,suffix=${{ matrix.variant.suffix }}
+          flavor: |
+            latest=false
 
       - name: Set up Docker buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build docker image
+      - name: Build Docker image (${{ matrix.variant.name }} - ${{ matrix.platform }})
         uses: docker/build-push-action@v6
         with:
           push: true
           context: .
-          file: ./docker/Dockerfile
+          file: ./docker/${{ matrix.variant.dockerfile }}
+          platforms: linux/${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.variant.name }}-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.variant.name }}-${{ matrix.platform }}
           provenance: false
+

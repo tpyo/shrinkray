@@ -1,0 +1,45 @@
+FROM ghcr.io/tpyo/shrinkray/base:latest-alpine AS build
+
+ENV PKG_CONFIG_PATH="/opt/shrinkray/lib/pkgconfig"
+ENV LD_LIBRARY_PATH="/opt/shrinkray/lib:/usr/lib"
+ENV LIBRARY_PATH="/opt/shrinkray/lib:/usr/lib"
+ENV SHRINKRAY_LIB_PATH="/opt/shrinkray/lib"
+ENV RUSTFLAGS="-L /usr/lib -C target-feature=-crt-static"
+
+WORKDIR /build
+
+COPY Cargo.toml .
+COPY Cargo.lock .
+COPY ./crates ./crates
+
+RUN cargo build --config net.git-fetch-with-cli=true --release -p shrinkray-server
+
+FROM alpine:3.21 AS final
+
+COPY --from=build /opt/shrinkray /opt/shrinkray
+
+RUN apk add --no-cache \
+    glib \
+    expat \
+    libde265 \
+    fftw \
+    lcms2 \
+    libexif \
+    libwebp \
+    libjpeg-turbo \
+    librsvg \
+    highway \
+    orc \
+    x265-libs \
+    libpng \
+    libstdc++ \
+    libgcc \
+    ca-certificates
+
+COPY --from=build /build/target/release/shrinkray /opt/shrinkray/bin/shrinkray
+
+ENV PKG_CONFIG_PATH="/opt/shrinkray/lib/pkgconfig"
+ENV LD_LIBRARY_PATH="/opt/shrinkray/lib:/usr/lib"
+ENV PATH="$PATH:/opt/shrinkray/bin"
+
+ENTRYPOINT ["/opt/shrinkray/bin/shrinkray"]
