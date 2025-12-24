@@ -14,10 +14,14 @@ Shrinkray is a high-performance image processing toolkit for Rust, consisting of
 
 ## Requirements
 
-- **libvips 8.17.0 or higher** is required for version 1.0.2 and above
-- For older libvips versions (8.16.x), use shrinkray 1.0.1
+- **libvips 8.17.0 or higher** (for older 8.16.x libvips versions use shrinkray 1.0.1)
+- **libaom** (for AVIF support via libheif)
+- **libheif**
+- **libjpeg**
+- **libpng**
+- **libwebp**
 
-See the [library documentation](crates/lib#system-dependencies) for installation instructions.
+For more information on installing the required dependencies, see the [Ubuntu](https://github.com/tpyo/shrinkray/blob/main/docker/Dockerfile.base-slim-bookworm) and [Alpine](https://github.com/tpyo/shrinkray/blob/main/docker/Dockerfile.base-alpine) base images.
 
 ## Library
 
