@@ -2,17 +2,19 @@ use crate::http::HeaderMapExt;
 use crate::service::Service;
 use axum::extract::State;
 use axum::{extract::Request, middleware::Next, response::IntoResponse};
-use axum_extra::extract::Host;
+use axum_extra::TypedHeader;
+use headers::Host;
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::info;
 
 pub async fn middleware(
-    Host(domain): Host,
+    TypedHeader(host): TypedHeader<Host>,
     State(ctx): State<Arc<Service>>,
     req: Request,
     next: Next,
 ) -> impl IntoResponse {
+    let domain = host.hostname();
     let uri = req.uri().clone();
     let mut request_uri = uri.path();
     if let Some(path_and_query) = uri.path_and_query() {
