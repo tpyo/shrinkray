@@ -52,7 +52,7 @@ tokio = { version = "1.49.0", default-features = false, features = ["full"] }
 tracing = "0.1.44"
 tracing-opentelemetry = "0.32.0"
 tracing-subscriber = { version = "0.3.22", features = ["json", "env-filter"] }
-url = "2.5.7"
+url = "2.5.8"
 
 [dev-dependencies]
 axum-test = "18.5.0"
