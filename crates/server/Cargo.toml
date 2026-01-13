@@ -50,7 +50,7 @@ strum = { version = "0.27.2", features = ["derive"] }
 thiserror = "2.0.17"
 tokio = { version = "1.49.0", default-features = false, features = ["full"] }
 tracing = "0.1.44"
-tracing-opentelemetry = "0.32.0"
+tracing-opentelemetry = "0.32.1"
 tracing-subscriber = { version = "0.3.22", features = ["json", "env-filter"] }
 url = "2.5.8"
 
