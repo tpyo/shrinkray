@@ -61,9 +61,6 @@ mod tests {
     #[traced_test]
     #[tokio::test]
     async fn test_middleware_logging() {
-        // Set up tracing subscriber with our test writer
-        let _guard = tracing_subscriber::fmt().with_ansi(false).try_init();
-
         let config = Config::default();
         let service = Arc::new(Service::new(config));
 
