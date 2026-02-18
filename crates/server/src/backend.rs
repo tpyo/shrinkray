@@ -181,6 +181,7 @@ mod tests {
             max_megapixels: Some(50.0),
             max_output_resolution: Some(8000),
             signing_secret: Some("super_secret_key".to_string()),
+            log_format: config::LogFormat::Default,
             s3: Some(config::S3Config {
                 access_key_id: "test-access-key".to_string(),
                 secret_access_key: "test-secret-key".to_string(),

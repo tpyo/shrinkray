@@ -4,6 +4,15 @@ use std::env;
 use std::fs::File;
 use std::net::SocketAddr;
 
+#[derive(Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum LogFormat {
+    #[default]
+    Default,
+    Json,
+    Logfmt,
+}
+
 #[derive(Deserialize, Clone, Debug)]
 pub struct S3Config {
     pub access_key_id: String,
@@ -24,6 +33,8 @@ pub struct Config {
     pub otel_collector_endpoint: Option<String>,
     pub max_megapixels: Option<f64>,
     pub max_output_resolution: Option<u32>,
+    #[serde(default)]
+    pub log_format: LogFormat,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -45,6 +56,7 @@ impl Default for Config {
             otel_collector_endpoint: None,
             max_megapixels: None,
             max_output_resolution: None,
+            log_format: LogFormat::Default,
         }
     }
 }
