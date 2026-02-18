@@ -25,7 +25,7 @@ axum = { version = "0.8.8", default-features = false, features = [
     "tracing",
 ] }
 axum-extra = { version = "0.12.5", features = ["typed-header"] }
-chrono = "0.4.42"
+chrono = "0.4.43"
 headers = "0.4"
 hex = "0.4.3"
 ipnet = { version = "2.11.0", features = ["serde"] }
@@ -45,17 +45,17 @@ rexif = "0.7.5"
 ring = "0.17.14"
 rstest = "0.26.1"
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.148"
+serde_json = "1.0.149"
 strum = { version = "0.27.2", features = ["derive"] }
-thiserror = "2.0.17"
+thiserror = "2.0.18"
 tokio = { version = "1.49.0", default-features = false, features = ["full"] }
 tracing = "0.1.44"
-tracing-opentelemetry = "0.32.0"
+tracing-opentelemetry = "0.32.1"
 tracing-subscriber = { version = "0.3.22", features = ["json", "env-filter"] }
 url = "2.5.8"
 
 [dev-dependencies]
-axum-test = "18.5.0"
+axum-test = "18.7.0"
 mockito = "1.7.1"
 regex = "1.12.2"
 tracing-test = "0.2.5"
