@@ -3,7 +3,6 @@
     "management_address": "0.0.0.0:9001",
     "otel_collector_endpoint": "http://alloy:4317",
     "read_timeout": 5,
-    "log_level": "info",
     "proxies": [
         "192.168.1.0/24",
         "10.0.0.0/8"
