@@ -39,7 +39,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}/server
           tags: |
             type=ref,event=branch,suffix=${{ matrix.variant.suffix }}
-            type=raw,value=latest${{ matrix.variant.suffix }},enable={{is_default_branch}}
+            type=raw,value=latest${{ matrix.variant.suffix }}
             type=semver,pattern={{version}},suffix=${{ matrix.variant.suffix }}
             type=semver,pattern={{major}}.{{minor}},suffix=${{ matrix.variant.suffix }}
             type=sha,suffix=${{ matrix.variant.suffix }}
