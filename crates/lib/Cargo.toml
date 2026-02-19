@@ -1,6 +1,6 @@
 [package]
 name = "shrinkray"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2024"
 rust-version = "1.90.0"
 description = "Lightning-fast image resizing & optimisation for the web"
@@ -12,13 +12,7 @@ license = "MIT"
 build = "build.rs"
 exclude = ["tests/*", ".vscode", ".github"]
 categories = ["multimedia::images", "multimedia::encoding", "graphics"]
-keywords = [
-    "libvips",
-    "vips",
-    "image",
-    "resize",
-    "thumbnail",
-]
+keywords = ["libvips", "vips", "image", "resize", "thumbnail"]
 
 [lib]
 name = "shrinkray"
