@@ -25,7 +25,7 @@ axum = { version = "0.8.8", default-features = false, features = [
     "tracing",
 ] }
 axum-extra = { version = "0.12.5", features = ["typed-header"] }
-chrono = "0.4.43"
+chrono = "0.4.44"
 headers = "0.4"
 hex = "0.4.3"
 ipnet = { version = "2.11.0", features = ["serde"] }
