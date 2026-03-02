@@ -3,7 +3,7 @@ FROM rust:1.92.0-slim-bookworm
 #ARG svt_av1_version=v3.1.2
 #ARG rav1e_version=v0.8.1
 ARG libaom_version=v3.13.1
-ARG libheif_version=v1.21.1
+ARG libheif_version=v1.21.2
 ARG libvips_version=v8.18.0
 
 ENV DEBIAN_FRONTEND=noninteractive
