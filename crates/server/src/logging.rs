@@ -55,7 +55,7 @@ mod tests {
     use super::*;
     use crate::config::Config;
     use axum::{Router, routing::get};
-    use axum_test::TestServer;
+    use axum_test::{TestResponse, TestServer};
     use tracing_test::traced_test;
 
     #[traced_test]
@@ -76,9 +76,9 @@ mod tests {
             ))
             .with_state(service);
 
-        let server = TestServer::new(app).unwrap();
+        let server = TestServer::new(app);
 
-        let response = server
+        let response: TestResponse = server
             .get("/test")
             .add_header("Host", "example.com")
             .add_header("User-Agent", "test-agent")

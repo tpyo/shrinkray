@@ -227,7 +227,7 @@ mod tests {
     use crate::image::Image;
     use crate::options::Format;
     use axum::http::{HeaderValue, header};
-    use axum_test::TestServer;
+    use axum_test::{TestResponse, TestServer};
 
     #[test]
     fn test_get_headers_with_download() {
@@ -258,9 +258,9 @@ mod tests {
         let service = Arc::new(Service::new(config));
         let router = get_router(Box::leak(Box::new(service.config.clone()))).with_state(service);
 
-        let test_server = TestServer::new(router).unwrap();
+        let test_server = TestServer::new(router);
 
-        let response = test_server.get("/invalid/path").await;
+        let response: TestResponse = test_server.get("/invalid/path").await;
         response.assert_status(StatusCode::NOT_FOUND);
     }
 
@@ -286,9 +286,9 @@ mod tests {
         let service = Arc::new(Service::new(config.clone()));
         let router = get_router(Box::leak(Box::new(config))).with_state(service);
 
-        let test_server = TestServer::new(router).unwrap();
+        let test_server = TestServer::new(router);
 
-        let response = test_server.get("/images/file.jpg").await;
+        let response: TestResponse = test_server.get("/images/file.jpg").await;
         response.assert_status_ok();
         response.assert_header(header::CONTENT_TYPE, "image/jpeg");
         response.assert_text("image data");
@@ -299,20 +299,20 @@ mod tests {
     #[tokio::test]
     async fn test_management_server_healthz() {
         let router = get_management_router();
-        let test_server = TestServer::new(router).unwrap();
+        let test_server = TestServer::new(router);
 
-        let response = test_server.get("/healthz").await;
+        let response: TestResponse = test_server.get("/healthz").await;
         response.assert_status_ok();
     }
 
     #[tokio::test]
     async fn test_management_server_metrics() {
         let router = get_management_router();
-        let test_server = TestServer::new(router).unwrap();
+        let test_server = TestServer::new(router);
 
         ::metrics::counter!("shrinkray_test").increment(1);
 
-        let response = test_server.get("/metrics").await;
+        let response: TestResponse = test_server.get("/metrics").await;
         response.assert_status_ok();
         let body = response.text();
         assert!(body.contains("TYPE shrinkray_test"));

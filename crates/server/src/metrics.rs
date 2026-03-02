@@ -75,7 +75,7 @@ pub fn fetch_duration(duration: Duration, backend: &str) {
 mod tests {
     use super::*;
     use axum::{Router, http::StatusCode, middleware::from_fn, routing::get};
-    use axum_test::TestServer;
+    use axum_test::{TestResponse, TestServer};
     use std::future::ready;
 
     fn test_router() -> Router {
@@ -93,14 +93,14 @@ mod tests {
     #[tokio::test]
     async fn test_middleware_records_metrics() {
         let app = test_router();
-        let server = TestServer::new(app).unwrap();
+        let server = TestServer::new(app);
 
         server.get("/200").await;
         server.get("/401").await;
         server.get("/404").await;
         server.get("/500").await;
 
-        let response = server.get("/metrics").await;
+        let response: TestResponse = server.get("/metrics").await;
         response.assert_status_ok();
         let body = response.text();
         assert!(body.contains("shrinkray_http_response_200_count 1"));
