@@ -2,12 +2,13 @@ FROM ghcr.io/tpyo/shrinkray/base:latest
 
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
 ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/shrinkray/lib"
-ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so.2"
 ENV SHRINKRAY_LIB_PATH="/opt/shrinkray/lib"
 ENV PATH="$PATH:/opt/shrinkray/bin"
 
 RUN apt-get -y install cargo rustc --no-install-recommends
 
 RUN cargo install --locked watchexec-cli
+
+RUN echo "/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/libjemalloc.so.2" > /etc/ld.so.preload
 
 WORKDIR /app

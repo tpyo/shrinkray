@@ -38,7 +38,8 @@ COPY --from=build /build/target/release/shrinkray /opt/shrinkray/bin/shrinkray
 
 ENV PKG_CONFIG_PATH="\$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
 ENV LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:/opt/shrinkray/lib"
-ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so.2"
 ENV PATH="$PATH:/opt/shrinkray/bin"
+
+RUN echo "/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/libjemalloc.so.2" > /etc/ld.so.preload
 
 ENTRYPOINT ["/opt/shrinkray/bin/shrinkray"]
