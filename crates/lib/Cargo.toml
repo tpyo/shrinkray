@@ -1,6 +1,6 @@
 [package]
 name = "shrinkray"
-version = "1.0.4"
+version = "1.0.5"
 edition = "2024"
 rust-version = "1.90.0"
 description = "Lightning-fast image resizing & optimisation for the web"
