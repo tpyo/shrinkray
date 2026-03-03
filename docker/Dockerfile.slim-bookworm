@@ -40,6 +40,8 @@ ENV PKG_CONFIG_PATH="\$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
 ENV LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:/opt/shrinkray/lib"
 ENV PATH="$PATH:/opt/shrinkray/bin"
 
+# jemalloc is recommended for libvips, and is necessary to deliver consistent performance
+# See https://www.libvips.org/API/8.17/developer-checklist.html#linux-memory-allocator
 RUN dpkg -L libjemalloc2 | grep 'libjemalloc.so.2$' > /etc/ld.so.preload
 
 ENTRYPOINT ["/opt/shrinkray/bin/shrinkray"]
