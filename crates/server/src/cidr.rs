@@ -10,12 +10,8 @@ pub struct Cidr4 {
 }
 
 impl Cidr4 {
-    fn new(addr: Ipv4Addr, prefix_len: u8) -> Self {
-        let mask = if prefix_len == 0 {
-            0
-        } else {
-            !0u32 << (32 - prefix_len)
-        };
+    pub fn new(addr: Ipv4Addr, prefix_len: u8) -> Self {
+        let mask = Self::mask(prefix_len);
         Self {
             network: u32::from(addr) & mask,
             mask,
@@ -23,7 +19,16 @@ impl Cidr4 {
     }
 
     #[inline]
-    fn contains_u32(self, addr: u32) -> bool {
+    fn mask(prefix_len: u8) -> u32 {
+        if prefix_len == 0 {
+            0
+        } else {
+            u32::MAX << (32 - prefix_len)
+        }
+    }
+
+    #[inline]
+    pub fn contains_u32(self, addr: u32) -> bool {
         (addr & self.mask) == self.network
     }
 }
@@ -36,12 +41,8 @@ pub struct Cidr6 {
 }
 
 impl Cidr6 {
-    fn new(addr: Ipv6Addr, prefix_len: u8) -> Self {
-        let mask = if prefix_len == 0 {
-            0
-        } else {
-            !0u128 << (128 - prefix_len)
-        };
+    pub fn new(addr: Ipv6Addr, prefix_len: u8) -> Self {
+        let mask = Self::mask(prefix_len);
         Self {
             network: u128::from(addr) & mask,
             mask,
@@ -49,7 +50,16 @@ impl Cidr6 {
     }
 
     #[inline]
-    fn contains_u128(&self, addr: u128) -> bool {
+    fn mask(prefix_len: u8) -> u128 {
+        if prefix_len == 0 {
+            0
+        } else {
+            u128::MAX << (128 - prefix_len)
+        }
+    }
+
+    #[inline]
+    pub fn contains_u128(&self, addr: u128) -> bool {
         (addr & self.mask) == self.network
     }
 }
@@ -120,7 +130,6 @@ impl From<Vec<Cidr>> for CidrSet {
 }
 
 impl CidrSet {
-    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -144,7 +153,6 @@ impl CidrSet {
 
     /// Check if an IP address is contained in any CIDR in the set.
     #[must_use]
-    #[inline]
     pub fn contains(&self, ip: IpAddr) -> bool {
         match ip {
             IpAddr::V4(addr) => self.contains_u32(u32::from(addr)),
@@ -160,14 +168,12 @@ impl CidrSet {
 
     /// Check if an IPv4 address (as u32) is contained in any CIDR in the set.
     #[must_use]
-    #[inline]
     pub fn contains_u32(&self, ip: u32) -> bool {
         self.v4.iter().any(|cidr| cidr.contains_u32(ip))
     }
 
     /// Check if an IPv6 address (as u128) is contained in any CIDR in the set.
     #[must_use]
-    #[inline]
     pub fn contains_u128(&self, ip: u128) -> bool {
         self.v6.iter().any(|cidr| cidr.contains_u128(ip))
     }
