@@ -1,3 +1,4 @@
+use crate::cidr::CidrSet;
 use serde::Deserialize;
 use shrinkray::config::ImageConfig;
 use std::env;
@@ -27,7 +28,7 @@ pub struct Config {
     pub management_address: SocketAddr,
     pub read_timeout: u64,
     pub routing: Vec<ConfigRouting>,
-    pub proxies: Vec<ipnet::IpNet>,
+    pub proxies: CidrSet,
     pub s3: Option<S3Config>,
     pub signing_secret: Option<String>,
     pub otel_collector_endpoint: Option<String>,
@@ -50,7 +51,7 @@ impl Default for Config {
             management_address: "0.0.0.0:9001".parse().unwrap(),
             read_timeout: 30,
             routing: Vec::new(),
-            proxies: Vec::new(),
+            proxies: CidrSet::new(),
             s3: None,
             signing_secret: None,
             otel_collector_endpoint: None,
@@ -84,6 +85,7 @@ pub fn read_config() -> Result<Config, Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::IpAddr;
 
     #[test]
     fn test_read_config() {
@@ -121,6 +123,10 @@ mod tests {
         assert_eq!(config.routing[2].endpoint, "s3://bucket-name/");
 
         // Test proxies
-        assert_eq!(config.proxies.len(), 2);
+        assert!(
+            config
+                .proxies
+                .contains("192.168.1.0".parse::<IpAddr>().unwrap())
+        );
     }
 }

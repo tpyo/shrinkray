@@ -7,7 +7,7 @@ ENV PATH="$PATH:/opt/shrinkray/bin"
 
 RUN apt-get -y install cargo rustc --no-install-recommends
 
-RUN cargo install --locked watchexec-cli
+RUN cargo install --locked watchexec-cli@2.4.3
 
 RUN echo "/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/libjemalloc.so.2" > /etc/ld.so.preload
 

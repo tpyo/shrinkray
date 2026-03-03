@@ -166,6 +166,7 @@ fn generate_sigv4_signature<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cidr::CidrSet;
     use crate::config;
     use chrono::TimeZone;
     use reqwest::header::HeaderValue;
@@ -177,7 +178,7 @@ mod tests {
             management_address: "127.0.0.1:9001".parse().unwrap(),
             read_timeout: 10,
             routing: vec![],
-            proxies: vec![],
+            proxies: CidrSet::new(),
             max_megapixels: Some(50.0),
             max_output_resolution: Some(8000),
             signing_secret: Some("super_secret_key".to_string()),
