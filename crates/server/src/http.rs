@@ -61,8 +61,9 @@ impl FromStr for XForwardedForHeader {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::cidr::Cidr;
+
+    use super::*;
 
     #[test]
     fn test_x_forwarded_for_correct_ip() {

@@ -171,21 +171,6 @@ impl CidrSet {
     pub fn contains_u128(&self, ip: u128) -> bool {
         self.v6.iter().any(|cidr| cidr.contains_u128(ip))
     }
-
-    /// Returns true if the set contains no CIDR blocks
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.v4.is_empty() && self.v6.is_empty()
-    }
-
-    /// Returns an iterator over all CIDR blocks in the set
-    pub fn iter(&self) -> impl Iterator<Item = Cidr> + '_ {
-        self.v4
-            .iter()
-            .copied()
-            .map(Cidr::V4)
-            .chain(self.v6.iter().copied().map(Cidr::V6))
-    }
 }
 
 #[cfg(test)]
@@ -262,7 +247,6 @@ mod tests {
     #[test]
     fn test_cidr_set_empty() {
         let set = CidrSet::new();
-        assert!(set.is_empty());
         assert!(!set.contains("192.168.1.1".parse().unwrap()));
     }
 

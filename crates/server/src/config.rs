@@ -85,6 +85,7 @@ pub fn read_config() -> Result<Config, Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::IpAddr;
 
     #[test]
     fn test_read_config() {
@@ -122,6 +123,10 @@ mod tests {
         assert_eq!(config.routing[2].endpoint, "s3://bucket-name/");
 
         // Test proxies
-        assert_eq!(config.proxies.iter().count(), 2);
+        assert!(
+            config
+                .proxies
+                .contains("192.168.1.0".parse::<IpAddr>().unwrap())
+        );
     }
 }
