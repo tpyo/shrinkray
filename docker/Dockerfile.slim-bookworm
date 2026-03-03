@@ -40,6 +40,6 @@ ENV PKG_CONFIG_PATH="\$PKG_CONFIG_PATH:/opt/shrinkray/lib/pkgconfig"
 ENV LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:/opt/shrinkray/lib"
 ENV PATH="$PATH:/opt/shrinkray/bin"
 
-RUN echo "/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/libjemalloc.so.2" > /etc/ld.so.preload
+RUN dpkg -L libjemalloc2 | grep 'libjemalloc.so.2$' > /etc/ld.so.preload
 
 ENTRYPOINT ["/opt/shrinkray/bin/shrinkray"]
