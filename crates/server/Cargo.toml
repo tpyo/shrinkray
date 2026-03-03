@@ -28,7 +28,6 @@ axum-extra = { version = "0.12.5", features = ["typed-header"] }
 chrono = "0.4.44"
 headers = "0.4"
 hex = "0.4.3"
-ipnet = { version = "2.11.0", features = ["serde"] }
 libvips = "1.7.3"
 metrics = { version = "0.24.3", default-features = false }
 metrics-exporter-prometheus = { version = "0.18.1", default-features = false }

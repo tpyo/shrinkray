@@ -1,5 +1,5 @@
+use crate::cidr::CidrSet;
 use axum::http::{HeaderMap, header};
-use ipnet::IpNet;
 use std::{net::IpAddr, str::FromStr};
 
 /// Extension trait for `HeaderMap`.
@@ -9,7 +9,7 @@ pub trait HeaderMapExt {
     /// Returns the 'referer' header if present
     fn get_referrer(&self) -> Option<String>;
     /// Return the client IP address from the 'x-forwarded-for' header if present
-    fn get_x_forwarded_for(&self, trusted_proxies: &[IpNet]) -> Option<String>;
+    fn get_x_forwarded_for(&self, trusted_proxies: &CidrSet) -> Option<String>;
 }
 
 impl HeaderMapExt for HeaderMap {
@@ -21,7 +21,7 @@ impl HeaderMapExt for HeaderMap {
         Some(self.get(header::REFERER)?.to_str().ok()?.to_string())
     }
 
-    fn get_x_forwarded_for(&self, trusted_proxies: &[IpNet]) -> Option<String> {
+    fn get_x_forwarded_for(&self, trusted_proxies: &CidrSet) -> Option<String> {
         let x_forwarded_for = self
             .get("x-forwarded-for")?
             .to_str()
@@ -34,7 +34,7 @@ impl HeaderMapExt for HeaderMap {
             .0
             .iter()
             .rev()
-            .find(|&ip| !trusted_proxies.iter().any(|subnet| subnet.contains(ip)))
+            .find(|&ip| !trusted_proxies.contains(*ip))
             .or(x_forwarded_for.0.first())
             .map(std::string::ToString::to_string)
     }
@@ -62,10 +62,11 @@ impl FromStr for XForwardedForHeader {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cidr::Cidr;
 
     #[test]
     fn test_x_forwarded_for_correct_ip() {
-        let trusted_proxies = vec![IpNet::from_str("192.168.1.0/16").unwrap()];
+        let trusted_proxies = CidrSet::from_cidrs(vec!["192.168.1.0/16".parse::<Cidr>().unwrap()]);
         let mut headers = HeaderMap::new();
         headers.insert(
             "x-forwarded-for",
@@ -82,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_x_forwarded_for_untrusted_ip() {
-        let trusted_proxies = vec![IpNet::from_str("192.168.1.0/16").unwrap()];
+        let trusted_proxies = CidrSet::from_cidrs(vec!["192.168.1.0/16".parse::<Cidr>().unwrap()]);
         let mut headers = HeaderMap::new();
         headers.insert(
             "x-forwarded-for",
@@ -99,7 +100,7 @@ mod tests {
 
     #[test]
     fn test_x_forwarded_for_single_ip() {
-        let trusted_proxies = vec![];
+        let trusted_proxies = CidrSet::new();
         let mut headers = HeaderMap::new();
         headers.insert("x-forwarded-for", "198.51.100.178".parse().unwrap());
 
@@ -111,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_x_forwarded_only_trusted_ips() {
-        let trusted_proxies = vec![IpNet::from_str("192.168.1.0/16").unwrap()];
+        let trusted_proxies = CidrSet::from_cidrs(vec!["192.168.1.0/16".parse::<Cidr>().unwrap()]);
         let mut headers = HeaderMap::new();
         headers.insert(
             "x-forwarded-for",
@@ -125,7 +126,7 @@ mod tests {
 
     #[test]
     fn test_x_forwarded_for_no_header() {
-        let trusted_proxies = vec![];
+        let trusted_proxies = CidrSet::new();
         let headers = HeaderMap::new();
         assert_eq!(headers.get_x_forwarded_for(&trusted_proxies), None);
     }
