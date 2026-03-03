@@ -1,6 +1,6 @@
 [package]
 name = "shrinkray-server"
-version = "1.0.6"
+version = "1.0.7"
 edition = "2024"
 publish = false
 rust-version = "1.90.0"
