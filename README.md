@@ -79,7 +79,7 @@ docker run -p 9000:9000 -p 9001:9001 -v $(pwd)/config/config.json:/opt/shrinkray
 
 This mounts your local `config/config.json` file to the expected location in the container and starts a server listening on http://localhost:9000.
 
-**Available image variants:**
+**Available image variants (arm64 and amd64):**
 - `ghcr.io/tpyo/shrinkray/server:latest` - Debian slim-bookworm based image
 - `ghcr.io/tpyo/shrinkray/server:latest-alpine` - Alpine Linux based image (smaller size)
 
