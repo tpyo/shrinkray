@@ -1,4 +1,4 @@
-FROM rust:1.94.1-slim-bookworm
+FROM rust:1.95.0-slim-bookworm
 
 #ARG svt_av1_version=v3.1.2
 #ARG rav1e_version=v0.8.1
