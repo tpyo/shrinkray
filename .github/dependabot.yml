@@ -22,3 +22,8 @@ updates:
       default-days: 2
       exclude:
         - "libvips"
+    groups:
+      opentelemetry:
+        patterns:
+          - "opentelemetry*"
+          - "tracing-opentelemetry"
