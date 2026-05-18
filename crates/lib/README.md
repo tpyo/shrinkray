@@ -22,7 +22,7 @@ cargo add shrinkray
 
 ### System Dependencies
 
-- **libvips 8.17.3** (for older 8.16.x libvips versions use shrinkray 1.0.1)
+- **libvips 8.18.0**
 - libaom (for AVIF support via libheif)
 - libheif
 - libjpeg
