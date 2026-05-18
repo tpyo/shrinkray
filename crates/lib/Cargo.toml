@@ -20,7 +20,7 @@ path = "src/lib.rs"
 
 [dependencies]
 hex = "0.4.3"
-libvips = "1.7.4"
+libvips = "2.0.0"
 once_cell = "1.21.4"
 rexif = "0.7.5"
 ring = "0.17.14"
