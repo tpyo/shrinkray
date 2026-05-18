@@ -2090,7 +2090,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shrinkray"
-version = "1.0.9"
+version = "1.1.0"
 dependencies = [
  "axum",
  "hex",
@@ -2107,7 +2107,7 @@ dependencies = [
 
 [[package]]
 name = "shrinkray-server"
-version = "1.0.9"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "aws-sign-v4",
@@ -2339,9 +2339,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.52.2"
+version = "1.52.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "110a78583f19d5cdb2c5ccf321d1290344e71313c6c37d43520d386027d18386"
+checksum = "8fc7f01b389ac15039e4dc9531aa973a135d7a4135281b12d7c1bc79fd57fffe"
 dependencies = [
  "bytes",
  "libc",
