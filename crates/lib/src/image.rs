@@ -372,7 +372,7 @@ fn apply_style(
         return ops::cast(&overlay, ops::BandFormat::Uchar);
     }
 
-    overlay = ops::composite_2(image, &overlay, ops::BlendMode::Over)?;
+    overlay = ops::composite2(image, &overlay, ops::BlendMode::Over)?;
 
     overlay = ops::cast(&overlay, ops::BandFormat::Uchar)?;
 
@@ -540,7 +540,7 @@ fn duotone(
     result = ops::linear(&result, &mut multiply, &mut addition)?;
 
     // Composite with original image
-    result = ops::composite_2(image, &result, ops::BlendMode::Over)?;
+    result = ops::composite2(image, &result, ops::BlendMode::Over)?;
 
     // Convert back to uchar and flatten
     result = ops::cast(&result, ops::BandFormat::Uchar)?;
