@@ -14,7 +14,7 @@ Shrinkray is a high-performance image processing toolkit for Rust, consisting of
 
 ## Requirements
 
-- **libvips 8.18.0**
+- **libvips 8.18.2**
 - libaom (for AVIF support via libheif)
 - libheif
 - libjpeg
