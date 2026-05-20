@@ -56,21 +56,21 @@ pub fn setup_tracing(config: &Config) -> SdkTracerProvider {
 
     let tracer = tracer_provider.tracer("shrinkray");
 
-    let logging_layer: Box<dyn tracing_subscriber::Layer<_> + Send + Sync> =
-        match config.log_format {
-            LogFormat::Default => tracing_subscriber::fmt::layer()
-                .with_thread_names(true)
-                .with_filter(get_env_filter())
-                .boxed(),
-            LogFormat::Json => tracing_subscriber::fmt::layer()
-                .json()
-                .with_filter(get_env_filter())
-                .boxed(),
-            LogFormat::Logfmt => tracing_logfmt::builder()
-                .layer()
-                .with_filter(get_env_filter())
-                .boxed(),
-        };
+    let logging_layer: Box<dyn tracing_subscriber::Layer<_> + Send + Sync> = match config.log_format
+    {
+        LogFormat::Default => tracing_subscriber::fmt::layer()
+            .with_thread_names(true)
+            .with_filter(get_env_filter())
+            .boxed(),
+        LogFormat::Json => tracing_subscriber::fmt::layer()
+            .json()
+            .with_filter(get_env_filter())
+            .boxed(),
+        LogFormat::Logfmt => tracing_logfmt::builder()
+            .layer()
+            .with_filter(get_env_filter())
+            .boxed(),
+    };
 
     let otel_layer = OpenTelemetryLayer::new(tracer).with_filter(
         tracing_subscriber::filter::LevelFilter::from_level(Level::INFO),
@@ -116,7 +116,7 @@ mod tests {
             Ok(())
         }
 
-        fn shutdown(&mut self) -> OTelSdkResult {
+        fn shutdown(&self) -> OTelSdkResult {
             Ok(())
         }
     }
@@ -147,7 +147,10 @@ mod tests {
     async fn test_setup_tracing() {
         let config = Config::default();
 
-        let provider = setup_tracing(&config);
+        // Avoid setup_tracing here: it claims the global tracing subscriber,
+        // which can only be set once per process and conflicts with tests
+        // that install their own subscriber.
+        let provider = setup_tracing_provider(&config).build();
 
         let tracer = provider.tracer("shrinkray");
         let mut span = tracer.start("test_span");
