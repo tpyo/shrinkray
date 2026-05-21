@@ -1066,9 +1066,9 @@ checksum = "48f5d2a454e16a5ea0f4ced81bd44e4cfc7bd3a507b61887c99fd3538b28e4af"
 
 [[package]]
 name = "libvips"
-version = "2.0.0"
+version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89e15b13471b79cc13437b2d3aae4d21225e11633cd49633113ab11fe20fd7e6"
+checksum = "f24b05ee3a2d258afe1a9964c8040d2155b41d5a5aff4d1f4facb6d3987f0ce2"
 dependencies = [
  "num-derive",
  "num-traits",
