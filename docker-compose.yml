@@ -47,7 +47,7 @@ services:
     depends_on:
       - tempo
   tempo:
-    image: grafana/tempo
+    image: grafana/tempo:2.10.5
     stop_grace_period: 1s
     command: "-config.file=/etc/grafana/tempo.yml -log.level=warn"
     volumes:
