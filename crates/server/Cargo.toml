@@ -25,7 +25,7 @@ axum = { version = "0.8.9", default-features = false, features = [
     "tracing",
 ] }
 axum-extra = { version = "0.12.6", features = ["typed-header"] }
-chrono = "0.4.44"
+chrono = "0.4.45"
 headers = "0.4"
 hex = "0.4.3"
 libvips = "2.1.0"
