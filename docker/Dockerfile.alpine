@@ -14,7 +14,7 @@ COPY ./crates ./crates
 
 RUN cargo build --config net.git-fetch-with-cli=true --release -p shrinkray-server
 
-FROM alpine:3.23 AS final
+FROM alpine:3.24 AS final
 
 COPY --from=build /opt/shrinkray /opt/shrinkray
 
