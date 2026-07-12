@@ -11,7 +11,7 @@ impl From<tokio::io::Error> for Error {
     fn from(err: tokio::io::Error) -> Self {
         match err.kind() {
             std::io::ErrorKind::NotFound => Error::NotFound,
-            _ => Error::Io(format!("{:?} : {:?}", &err.kind(), &err)),
+            _ => Error::Io(format!("{:?} : {:?}", err.kind(), err)),
         }
     }
 }
@@ -51,7 +51,7 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
         } else {
             format!(
                 "http://{}.s3.{}.amazonaws.com{}",
-                &bucket, &s3config.region, path
+                bucket, s3config.region, path
             )
         };
         let datetime = chrono::Utc::now();

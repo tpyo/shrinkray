@@ -134,7 +134,7 @@ fn get_router(config: &'static config::Config) -> Router<Arc<Service>> {
         Router::new().route("/favicon.ico", get(|| async { StatusCode::NOT_FOUND }));
 
     for route in &config.routing {
-        let path = format!("/{}", &route.path);
+        let path = format!("/{}", route.path);
         let endpoint = route.endpoint.clone();
         let route_path = route.path.clone();
 
