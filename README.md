@@ -165,9 +165,9 @@ http://localhost:9000/samples/08.jpg?blur=100
 | --------------- | -------------------------------------------------------- |
 | `w`             | Width in pixels                                          |
 | `h`             | Height in pixels                                         |
-| `bg`            | Background colour used when padding or flattening        |
+| `bg`            | Background colour used when flattening                   |
 | `ar`            | Aspect ratio (e.g. `16:9`)                               |
-| `q`             | Output quality (default: `75`)                           |
+| `q`             | Output quality (default: 75 for AVIF and 80 for others.) |
 | `dpr`           | Device pixel ratio multiplier                            |
 | `rot`           | Rotation in degrees (`90`, `180` or `270`)               |
 | `fit`           | Resizing mode (`clip`, `crop`, `max`) (default: `clip`)  |
@@ -176,16 +176,16 @@ http://localhost:9000/samples/08.jpg?blur=100
 | `lossless`      | Enable lossless encoding when available                  |
 | `trim`          | Trim borders automatically (`auto`, `colour`)            |
 | `trim-colour`   | Set the trim colour for the `trim` parameter             |
-| `sharpen`       | Adjust sharpness (0-100)                                 |
-| `blur`          | Apply a blur (0-100)                                     |
+| `sharpen`       | Adjust sharpness (1-100)                                 |
+| `blur`          | Apply a blur (1-100)                                     |
 | `tint`          | Apply a colour tint (e.g; `ff0000`)                      |
-| `kodachrome`    | Filter application (0-100)                               |
-| `vintage`       | Filter application (0-100)                               |
-| `polaroid`      | Filter application (0-100)                               |
-| `technicolor`   | Filter application (0-100)                               |
-| `sepia`         | Filter application (0-100)                               |
-| `monochrome`    | Filter application (0-100)                               |
-| `duotone`       | Duotone (`shadow`,`highlight` - e.g; `003263,ffa600`)    |
+| `kodachrome`    | Filter application (1-100)                               |
+| `vintage`       | Filter application (1-100)                               |
+| `polaroid`      | Filter application (1-100)                               |
+| `technicolor`   | Filter application (1-100)                               |
+| `sepia`         | Filter application (1-100)                               |
+| `monochrome`    | Filter application (1-100)                               |
+| `duotone`       | Duotone (`shadow`,`highlight` - e.g; `003264,ffa500`)    |
 | `duotone-alpha` | Duotone opacity/alpha (1-100) (default: `100`)           |
 | `sig`           | HMAC signature used by `sign()` for request verification |
 
