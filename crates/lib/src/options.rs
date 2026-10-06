@@ -211,7 +211,7 @@ impl ImageOptions {
     pub fn any_set(&self) -> bool {
         self.signature.is_some()
             || self.background.is_some()
-            || (self.quality.is_some() && self.quality.unwrap() != 75)
+            || (self.quality.is_some())
             || self.aspect_ratio.is_some()
             || self.download.is_some()
             || self.trim.is_some()
@@ -881,15 +881,13 @@ fn calculate_max_dimensions(
 }
 
 pub fn calculate_dimensions(image_options: &mut ImageOptions, image_width: i32, image_height: i32) {
+    // Apply the Device Pixel Ratio (DPR) to the requested dimensions before
+    // fitting, so that `w=200&dpr=2` is the same request as `w=400`
     let dpr = image_options.device_pixel_ratio.unwrap_or(1);
+    image_options.width = image_options.width.map(|width| width * dpr);
+    image_options.height = image_options.height.map(|height| height * dpr);
 
-    let aspect_ratio = match image_options.aspect_ratio.clone() {
-        Some(ar) => Some(ar),
-        None => Some(AspectRatio::from_dimensions(
-            image_width * dpr,
-            image_height * dpr,
-        )),
-    };
+    let aspect_ratio = image_options.aspect_ratio.clone();
 
     // Determine the new dimensions based on the `fit` parameter
     let (width, height) = match image_options.fit {
@@ -904,9 +902,8 @@ pub fn calculate_dimensions(image_options: &mut ImageOptions, image_width: i32, 
         }
     };
 
-    // Apply the Device Pixel Ratio (DPR) scaling
-    image_options.width = Some(width * dpr);
-    image_options.height = Some(height * dpr);
+    image_options.width = Some(width);
+    image_options.height = Some(height);
 }
 
 #[cfg(test)]
@@ -955,6 +952,15 @@ mod tests {
     #[case::max_width_and_height_invalid("?w=0&h=0&fit=max", (600, 400), (600, 400))]
     #[case::max_width_and_height("?w=300&h=200&fit=max", (600, 400), (300, 200))]
     #[case::max_width_and_height("?w=100&h=100&fit=max", (600, 400), (100, 67))]
+    // DPR: scales the requested dimensions, so the result matches the equivalent 1x request
+    #[case::dpr_width_only("?w=200&dpr=2", (6000, 4000), (400, 267))]
+    #[case::dpr_width_only("?w=400", (6000, 4000), (400, 267))]
+    #[case::dpr_height_only("?h=100&dpr=3", (600, 400), (450, 300))]
+    #[case::dpr_clip_width_and_height("?w=100&h=100&dpr=2&fit=clip", (600, 400), (200, 133))]
+    #[case::dpr_crop_width_and_height("?w=100&h=100&dpr=2&fit=crop", (600, 400), (200, 200))]
+    #[case::dpr_aspect_ratio("?w=200&ar=16:9&dpr=2", (6000, 4000), (400, 225))]
+    #[case::dpr_max_no_upscale("?w=200&dpr=2&fit=max", (300, 200), (300, 200))]
+    #[case::dpr_without_dimensions("?dpr=2", (600, 400), (600, 400))]
     fn test_calculate_dimensions(
         #[case] query: &str,
         #[case] image_dimensions: (i32, i32),
