@@ -70,7 +70,7 @@ async fn handle_image_request(
     let relative_path = request_path.replacen(&route_path, "", 1);
     let target = format!("{}{}", endpoint, relative_path);
 
-    let image = get_file_from_backend(&target, &ctx.config)
+    let image = get_file_from_backend(&endpoint, &relative_path, &ctx.config)
         .await
         .inspect_err(|err| {
             tracing::Span::current().set_status(Status::Error {
@@ -295,6 +295,50 @@ mod tests {
         response.assert_text("image data");
 
         mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_image_handler_file_path_traversal() {
+        let base = std::env::temp_dir().join("shrinkray_test_handler_traversal");
+        let root = base.join("root");
+        tokio::fs::create_dir_all(&root).await.unwrap();
+        tokio::fs::write(root.join("file.jpg"), b"image data")
+            .await
+            .unwrap();
+        tokio::fs::write(base.join("secret.txt"), b"secret")
+            .await
+            .unwrap();
+
+        let config: config::Config = config::Config {
+            routing: vec![ConfigRouting {
+                path: "files/{*path}".to_string(),
+                endpoint: format!("file://{}/", root.to_str().unwrap()),
+            }],
+            ..Default::default()
+        };
+
+        let service = Arc::new(Service::new(config.clone()));
+        let router = get_router(Box::leak(Box::new(config))).with_state(service);
+
+        let test_server = TestServer::new(router);
+
+        let response: TestResponse = test_server.get("/files/file.jpg").await;
+        response.assert_status_ok();
+        response.assert_text("image data");
+
+        let paths = [
+            "/files/..%2Fsecret.txt",
+            "/files/%2E%2E%2Fsecret.txt",
+            "/files/..%5Csecret.txt",
+            "/files/.%09.%2Fsecret.txt",
+            "/files/%252e%252e%2Fsecret.txt",
+        ];
+        for path in paths {
+            let response: TestResponse = test_server.get(path).await;
+            response.assert_status(StatusCode::NOT_FOUND);
+        }
+
+        tokio::fs::remove_dir_all(&base).await.ok();
     }
 
     #[tokio::test]

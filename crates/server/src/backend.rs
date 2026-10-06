@@ -1,6 +1,6 @@
 use aws_sign_v4::AwsSign;
 use reqwest::{Client, Response, header::HeaderMap};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path};
 use url::Url;
 
 use crate::config::Config;
@@ -16,8 +16,28 @@ impl From<tokio::io::Error> for Error {
     }
 }
 
-async fn get_file_from_file(path: &str) -> Result<Vec<u8>> {
-    let full_path: PathBuf = Path::new(&path).canonicalize()?;
+async fn get_file_from_path(root: &Path, path: &str) -> Result<Vec<u8>> {
+    if path.contains('\0') {
+        return Err(Error::NotFound);
+    }
+
+    // Only plain file and directory names may be appended to the root
+    let mut full_path = root.to_path_buf();
+    for component in Path::new(path).components() {
+        match component {
+            Component::Normal(part) => full_path.push(part),
+            Component::RootDir | Component::CurDir => {}
+            Component::ParentDir | Component::Prefix(_) => return Err(Error::NotFound),
+        }
+    }
+
+    // Resolve symlinks on both sides so that the resolved file must live under the root
+    let root = tokio::fs::canonicalize(root).await?;
+    let full_path = tokio::fs::canonicalize(&full_path).await?;
+    if !full_path.starts_with(&root) {
+        return Err(Error::NotFound);
+    }
+
     Ok(tokio::fs::read(&full_path).await?)
 }
 
@@ -82,17 +102,28 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
     Err(Error::InvalidBackend)
 }
 
-#[tracing::instrument(skip_all, fields(shrinkray.file = url))]
-pub async fn get_file_from_backend(url: &str, config: &Config) -> Result<Vec<u8>> {
-    let url = Url::parse(url)?;
+#[tracing::instrument(skip_all, fields(shrinkray.file = format!("{endpoint}{path}")))]
+pub async fn get_file_from_backend(endpoint: &str, path: &str, config: &Config) -> Result<Vec<u8>> {
+    let endpoint_url = Url::parse(endpoint)?;
     let start = std::time::Instant::now();
-    let data = match url.scheme() {
-        "file" => get_file_from_file(url.path()).await,
-        "http" | "https" => get_file_from_http(url.as_str(), config).await,
-        "s3" => get_file_from_s3(url.host_str().unwrap(), url.path(), config).await,
+    let data = match endpoint_url.scheme() {
+        // The request path is never parsed as part of a URL here, the URL
+        // parser would resolve `..` segments before they could be rejected
+        "file" => match endpoint_url.to_file_path() {
+            Ok(root) => get_file_from_path(&root, path).await,
+            Err(()) => Err(Error::InvalidBackend),
+        },
+        "http" | "https" => {
+            let url = Url::parse(&format!("{endpoint}{path}"))?;
+            get_file_from_http(url.as_str(), config).await
+        }
+        "s3" => {
+            let url = Url::parse(&format!("{endpoint}{path}"))?;
+            get_file_from_s3(url.host_str().unwrap(), url.path(), config).await
+        }
         _ => Err(Error::InvalidBackend),
     };
-    fetch_duration(start.elapsed(), url.scheme());
+    fetch_duration(start.elapsed(), endpoint_url.scheme());
     data
 }
 
@@ -170,6 +201,7 @@ mod tests {
     use crate::config;
     use chrono::TimeZone;
     use reqwest::header::HeaderValue;
+    use std::path::PathBuf;
 
     fn mock_config() -> config::Config {
         config::Config {
@@ -233,13 +265,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_file_from_file_success() {
+    async fn test_get_file_from_path_success() {
         let temp_dir = std::env::temp_dir();
         let test_file = temp_dir.join("test_file.jpg");
         let test_content = b"image data";
         tokio::fs::write(&test_file, test_content).await.unwrap();
 
-        let result = get_file_from_file(test_file.to_str().unwrap()).await;
+        let result = get_file_from_path(&temp_dir, "test_file.jpg").await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), test_content);
 
@@ -247,14 +279,111 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_file_from_file_not_found() {
-        let non_existent_path = "/tmp/does/not/exist.jpg";
-        let result = get_file_from_file(non_existent_path).await;
+    async fn test_get_file_from_path_not_found() {
+        let result = get_file_from_path(&std::env::temp_dir(), "does/not/exist.jpg").await;
         assert!(result.is_err());
         match result.unwrap_err() {
             Error::NotFound => {}
             other => panic!("expected NotFound error, got: {:?}", other),
         }
+    }
+
+    #[tokio::test]
+    async fn test_get_file_from_path_root_not_found() {
+        let result = get_file_from_path(Path::new("/tmp/does/not"), "exist.jpg").await;
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            Error::NotFound => {}
+            other => panic!("expected NotFound error, got: {:?}", other),
+        }
+    }
+
+    // Creates `<temp>/<name>/root/file.jpg` and `<temp>/<name>/secret.txt`
+    async fn traversal_fixture(name: &str) -> (PathBuf, PathBuf) {
+        let base = std::env::temp_dir().join(name);
+        let root = base.join("root");
+        tokio::fs::remove_dir_all(&base).await.ok();
+        tokio::fs::create_dir_all(root.join("nested"))
+            .await
+            .unwrap();
+        tokio::fs::write(root.join("file.jpg"), b"image data")
+            .await
+            .unwrap();
+        tokio::fs::write(base.join("secret.txt"), b"secret")
+            .await
+            .unwrap();
+        (base, root)
+    }
+
+    #[tokio::test]
+    async fn test_get_file_from_path_rejects_traversal() {
+        let (base, root) = traversal_fixture("test_traversal").await;
+
+        let paths = [
+            "../secret.txt",
+            "/../secret.txt",
+            "./../secret.txt",
+            "nested/../../secret.txt",
+            "nested/../file.jpg",
+            "../root/file.jpg",
+            "..",
+            "..\\secret.txt",
+            ".\t./secret.txt",
+            "%2e%2e/secret.txt",
+            "file.jpg\0/../../secret.txt",
+        ];
+        for path in paths {
+            match get_file_from_path(&root, path).await {
+                Err(Error::NotFound) => {}
+                other => panic!("expected NotFound error for {:?}, got: {:?}", path, other),
+            }
+        }
+
+        tokio::fs::remove_dir_all(&base).await.ok();
+    }
+
+    #[tokio::test]
+    async fn test_get_file_from_path_absolute_path_stays_in_root() {
+        let (base, root) = traversal_fixture("test_absolute").await;
+
+        let result = get_file_from_path(&root, "//file.jpg").await;
+        assert_eq!(result.unwrap(), b"image data");
+
+        let secret = base.join("secret.txt");
+        match get_file_from_path(&root, secret.to_str().unwrap()).await {
+            Err(Error::NotFound) => {}
+            other => panic!("expected NotFound error, got: {:?}", other),
+        }
+
+        tokio::fs::remove_dir_all(&base).await.ok();
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn test_get_file_from_path_rejects_symlink_escape() {
+        let (base, root) = traversal_fixture("test_symlink").await;
+        tokio::fs::symlink(base.join("secret.txt"), root.join("link.txt"))
+            .await
+            .unwrap();
+        tokio::fs::symlink(&base, root.join("outside"))
+            .await
+            .unwrap();
+        tokio::fs::symlink(root.join("file.jpg"), root.join("inside.jpg"))
+            .await
+            .unwrap();
+
+        for path in ["link.txt", "outside/secret.txt"] {
+            match get_file_from_path(&root, path).await {
+                Err(Error::NotFound) => {}
+                other => panic!("expected NotFound error for {:?}, got: {:?}", path, other),
+            }
+        }
+
+        // Symlinks that stay within the root are still served
+        let result = get_file_from_path(&root, "inside.jpg").await;
+        assert_eq!(result.unwrap(), b"image data");
+
+        tokio::fs::remove_dir_all(&base).await.ok();
     }
 
     #[tokio::test]
@@ -352,8 +481,8 @@ mod tests {
         tokio::fs::write(&test_file, test_content).await.unwrap();
 
         let config = mock_config();
-        let file_url = format!("file://{}", test_file.to_str().unwrap());
-        let result = get_file_from_backend(&file_url, &config).await;
+        let endpoint = format!("file://{}/", temp_dir.to_str().unwrap());
+        let result = get_file_from_backend(&endpoint, "test_backend_file.jpg", &config).await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), test_content);
@@ -362,9 +491,39 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_get_file_from_backend_file_scheme_rejects_traversal() {
+        let (base, root) = traversal_fixture("test_backend_traversal").await;
+
+        let config = mock_config();
+        let endpoint = format!("file://{}/", root.to_str().unwrap());
+
+        let result = get_file_from_backend(&endpoint, "file.jpg", &config).await;
+        assert_eq!(result.unwrap(), b"image data");
+
+        for path in ["../secret.txt", "..\\secret.txt", "%2e%2e/secret.txt"] {
+            match get_file_from_backend(&endpoint, path, &config).await {
+                Err(Error::NotFound) => {}
+                other => panic!("expected NotFound error for {:?}, got: {:?}", path, other),
+            }
+        }
+
+        tokio::fs::remove_dir_all(&base).await.ok();
+    }
+
+    #[tokio::test]
+    async fn test_get_file_from_backend_file_scheme_invalid_host() {
+        let config = mock_config();
+        let result = get_file_from_backend("file://example.com/files/", "file.jpg", &config).await;
+        match result {
+            Err(Error::InvalidBackend) => {}
+            other => panic!("expected InvalidBackend error, got: {:?}", other),
+        }
+    }
+
+    #[tokio::test]
     async fn test_get_file_from_backend_invalid_scheme() {
         let config = mock_config();
-        let result = get_file_from_backend("ftp://example.com/file.txt", &config).await;
+        let result = get_file_from_backend("ftp://example.com/", "file.txt", &config).await;
         assert!(result.is_err());
         match result.unwrap_err() {
             Error::InvalidBackend => {}
@@ -385,8 +544,8 @@ mod tests {
             .create_async()
             .await;
 
-        let url = format!("{}/backend-test.jpg", server.url());
-        let result = get_file_from_backend(&url, &config).await;
+        let endpoint = format!("{}/", server.url());
+        let result = get_file_from_backend(&endpoint, "backend-test.jpg", &config).await;
 
         mock.assert_async().await;
         assert!(result.is_ok());
