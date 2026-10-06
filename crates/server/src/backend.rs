@@ -104,26 +104,22 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
 
 #[tracing::instrument(skip_all, fields(shrinkray.file = format!("{endpoint}{path}")))]
 pub async fn get_file_from_backend(endpoint: &str, path: &str, config: &Config) -> Result<Vec<u8>> {
-    let endpoint_url = Url::parse(endpoint)?;
+    let url = if endpoint.starts_with("file:") {
+        Url::parse(endpoint)?
+    } else {
+        Url::parse(&format!("{endpoint}{path}"))?
+    };
     let start = std::time::Instant::now();
-    let data = match endpoint_url.scheme() {
-        // The request path is never parsed as part of a URL here, the URL
-        // parser would resolve `..` segments before they could be rejected
-        "file" => match endpoint_url.to_file_path() {
+    let data = match url.scheme() {
+        "file" => match url.to_file_path() {
             Ok(root) => get_file_from_path(&root, path).await,
             Err(()) => Err(Error::InvalidBackend),
         },
-        "http" | "https" => {
-            let url = Url::parse(&format!("{endpoint}{path}"))?;
-            get_file_from_http(url.as_str(), config).await
-        }
-        "s3" => {
-            let url = Url::parse(&format!("{endpoint}{path}"))?;
-            get_file_from_s3(url.host_str().unwrap(), url.path(), config).await
-        }
+        "http" | "https" => get_file_from_http(url.as_str(), config).await,
+        "s3" => get_file_from_s3(url.host_str().unwrap(), url.path(), config).await,
         _ => Err(Error::InvalidBackend),
     };
-    fetch_duration(start.elapsed(), endpoint_url.scheme());
+    fetch_duration(start.elapsed(), url.scheme());
     data
 }
 
