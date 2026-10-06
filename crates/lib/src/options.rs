@@ -342,17 +342,27 @@ impl ImageOptions {
             .join("&")
     }
 
-    pub fn sign(&self, secret: &str) -> std::string::String {
-        let key = hmac::Key::new(hmac::HMAC_SHA256, secret.as_bytes());
-        hex::encode(hmac::sign(&key, self.query_str().as_bytes()).as_ref())
+    fn signing_payload(&self, path: &str) -> String {
+        format!("{}?{}", path, self.query_str())
     }
 
-    pub fn verify_signature(&self, signing_secret: &str) -> bool {
+    /// Sign the options for the given request path.
+    ///
+    /// `path` is the path of the request URI exactly as it appears in the URL
+    /// with its leading slash and without the query string (e.g. `/images/photo.jpg`).
+    pub fn sign(&self, secret: &str, path: &str) -> std::string::String {
+        let key = hmac::Key::new(hmac::HMAC_SHA256, secret.as_bytes());
+        hex::encode(hmac::sign(&key, self.signing_payload(path).as_bytes()).as_ref())
+    }
+
+    /// Verify the `sig` parameter against the options and the request path.
+    pub fn verify_signature(&self, signing_secret: &str, path: &str) -> bool {
         if let Some(ref sig_hex) = self.signature
             && let Ok(sig_bytes) = hex::decode(sig_hex)
         {
             let key = hmac::Key::new(hmac::HMAC_SHA256, signing_secret.as_bytes());
-            return ring::hmac::verify(&key, self.query_str().as_bytes(), &sig_bytes).is_ok();
+            return ring::hmac::verify(&key, self.signing_payload(path).as_bytes(), &sig_bytes)
+                .is_ok();
         }
         false
     }
@@ -1014,10 +1024,20 @@ mod tests {
     #[test]
     fn test_sign_valid() {
         let secret = "super_secret_key";
-        let signature = get_image_options().sign(secret);
+        let signature = get_image_options().sign(secret, "/photo.jpg");
         assert_eq!(
             signature,
-            "934868feeed5203a0fde3fc40661c21d1cc1f5fd732c04b0fb9363d25813575f"
+            "aedef207296d6c4382a1179add18765ac93e11562bb82f6e9d081defacc06d77"
+        );
+    }
+
+    #[test]
+    fn test_sign_differs_per_path() {
+        let secret = "super_secret_key";
+        let options = get_image_options();
+        assert_ne!(
+            options.sign(secret, "/photo.jpg"),
+            options.sign(secret, "/other.jpg")
         );
     }
 
@@ -1025,9 +1045,18 @@ mod tests {
     fn test_verify_signature_valid() {
         let secret = "super_secret_key";
         let mut options = get_image_options();
-        let signature = options.sign(secret);
+        let signature = options.sign(secret, "/photo.jpg");
         options.signature = Some(signature);
-        assert!(options.verify_signature(secret));
+        assert!(options.verify_signature(secret, "/photo.jpg"));
+    }
+
+    #[test]
+    fn test_verify_signature_other_path() {
+        let secret = "super_secret_key";
+        let mut options = get_image_options();
+        let signature = options.sign(secret, "/photo.jpg");
+        options.signature = Some(signature);
+        assert!(!options.verify_signature(secret, "/other.jpg"));
     }
 
     #[test]
@@ -1035,14 +1064,14 @@ mod tests {
         let secret = "super_secret_key";
         let mut options = get_image_options();
         options.signature = Some("invalid_signature".to_string());
-        assert!(!options.verify_signature(secret));
+        assert!(!options.verify_signature(secret, "/photo.jpg"));
     }
 
     #[test]
     fn test_verify_signature_no_signature() {
         let secret = "super_secret_key";
         let options = get_image_options();
-        assert!(!options.verify_signature(secret));
+        assert!(!options.verify_signature(secret, "/photo.jpg"));
     }
 
     #[test]

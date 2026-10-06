@@ -13,7 +13,7 @@ use shrinkray::{image, options};
 use axum::{
     Router,
     extract::{Path, Query, State},
-    http::{HeaderMap, HeaderValue, StatusCode, header},
+    http::{HeaderMap, HeaderValue, StatusCode, Uri, header},
     middleware,
     response::IntoResponse,
     routing::get,
@@ -61,6 +61,7 @@ fn get_headers(image: &image::Image, download: Option<String>) -> Result<HeaderM
 #[tracing::instrument(skip_all)]
 async fn handle_image_request(
     State(ctx): State<Arc<Service>>,
+    uri: Uri,
     request_path: String,
     mut options: Query<options::ImageOptions>,
     _headers: HeaderMap,
@@ -91,7 +92,7 @@ async fn handle_image_request(
     let download = options.download.clone();
 
     if let Some(signing_secret) = &ctx.config.signing_secret
-        && !options.verify_signature(signing_secret)
+        && !options.verify_signature(signing_secret, uri.path())
     {
         return Err(error::Error::InvalidSignature);
     }
@@ -139,12 +140,21 @@ fn get_router(config: &'static config::Config) -> Router<Arc<Service>> {
         let route_path = route.path.clone();
 
         let handler = move |ctx: State<Arc<Service>>,
+                            uri: Uri,
                             Path(request_path): Path<String>,
                             options: Query<options::ImageOptions>,
                             headers: HeaderMap| {
             async move {
-                handle_image_request(ctx, request_path, options, headers, endpoint, route_path)
-                    .await
+                handle_image_request(
+                    ctx,
+                    uri,
+                    request_path,
+                    options,
+                    headers,
+                    endpoint,
+                    route_path,
+                )
+                .await
             }
         };
 
