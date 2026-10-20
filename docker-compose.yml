@@ -9,7 +9,7 @@ services:
     volumes:
       - ./:/app
       - ./target/docker/shrinkray/:/app/target
-    command: sh -c "watchexec -e rs -r 'cargo run'"
+    command: sh -c "watchexec -e rs,toml -r 'cargo run'"
     ports:
       - "9000:9000"
       - "9001:9001"
