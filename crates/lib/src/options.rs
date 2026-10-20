@@ -257,16 +257,16 @@ impl ImageOptions {
 
         // Insert each option if it has a value
         if let Some(bg) = &self.background {
-            params.insert("background".into(), bg.into());
+            params.insert("bg".into(), bg.into());
         }
         if let Some(q) = self.quality {
-            params.insert("quality".into(), q.to_string());
+            params.insert("q".into(), q.to_string());
         }
         if let Some(ar) = &self.aspect_ratio {
             params.insert("ar".into(), ar.to_string());
         }
         if let Some(download) = &self.download {
-            params.insert("download".into(), download.to_string());
+            params.insert("dl".into(), download.to_string());
         }
         if let Some(trim) = &self.trim {
             params.insert("trim".into(), trim.to_string());
@@ -313,10 +313,10 @@ impl ImageOptions {
             params.insert("tint".into(), tint.into());
         }
         if let Some(width) = self.width {
-            params.insert("width".into(), width.to_string());
+            params.insert("w".into(), width.to_string());
         }
         if let Some(height) = self.height {
-            params.insert("height".into(), height.to_string());
+            params.insert("h".into(), height.to_string());
         }
         if let Some(dpr) = self.device_pixel_ratio {
             params.insert("dpr".into(), dpr.to_string());
@@ -328,7 +328,7 @@ impl ImageOptions {
             params.insert("fit".into(), fit.to_string().to_lowercase());
         }
         if let Some(fmt) = &self.format {
-            params.insert("format".into(), fmt.to_string());
+            params.insert("fm".into(), fmt.to_string());
         }
         if let Some(lossless) = self.lossless {
             params.insert("lossless".into(), lossless.to_string());
@@ -1017,7 +1017,7 @@ mod tests {
         let query_str = get_image_options().query_str();
         assert_eq!(
             query_str,
-            "ar=16:9&background=ff0000&download=image.jpg&dpr=2&fit=crop&format=jpeg&height=200&kodachrome=50&quality=80&sharpen=50&tint=ff00ff&trim=auto&trim-colour=00ff00&width=300"
+            "ar=16:9&bg=ff0000&dl=image.jpg&dpr=2&fit=crop&fm=jpeg&h=200&kodachrome=50&q=80&sharpen=50&tint=ff00ff&trim=auto&trim-colour=00ff00&w=300"
         );
     }
 
@@ -1027,7 +1027,7 @@ mod tests {
         let signature = get_image_options().sign(secret, "/photo.jpg");
         assert_eq!(
             signature,
-            "aedef207296d6c4382a1179add18765ac93e11562bb82f6e9d081defacc06d77"
+            "ab51ca2fdf4573cc3527dd130d055cad338856a501f1b74604083f12e1ff5e3a"
         );
     }
 
