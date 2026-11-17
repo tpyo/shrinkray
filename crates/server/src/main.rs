@@ -51,7 +51,7 @@ fn get_headers(image: &image::Image, download: Option<String>) -> Result<HeaderM
     if let Some(filename) = download {
         headers.insert(
             header::CONTENT_DISPOSITION,
-            HeaderValue::from_str(&format!("attachment; filename=\"{}\"", filename))?,
+            HeaderValue::from_str(&format!("attachment; filename=\"{filename}\""))?,
         );
     }
 
@@ -69,7 +69,7 @@ async fn handle_image_request(
     route_path: String,
 ) -> Result<impl IntoResponse> {
     let relative_path = request_path.replacen(&route_path, "", 1);
-    let target = format!("{}{}", endpoint, relative_path);
+    let target = format!("{endpoint}{relative_path}");
 
     let image = get_file_from_backend(&endpoint, &relative_path, &ctx.config)
         .await
@@ -77,7 +77,7 @@ async fn handle_image_request(
             tracing::Span::current().set_status(Status::Error {
                 description: err.to_string().into(),
             });
-            error!("failed to fetch image from backend: {}", err)
+            error!("failed to fetch image from backend: {}", err);
         })?;
 
     if !options.any_set() {
@@ -117,8 +117,7 @@ async fn handle_image_request(
         .await
         .map_err(|err| {
             error::Error::Rayon(format!(
-                "failed to receive image from processing thread: {}",
-                err
+                "failed to receive image from processing thread: {err}"
             ))
         })?
         .inspect_err(|err| {
@@ -209,7 +208,7 @@ async fn run_management_server(
 async fn main() {
     let config = read_config();
     if let Err(e) = config {
-        eprintln!("failed to read configuration: {}", e);
+        eprintln!("failed to read configuration: {e}");
         std::process::exit(1);
     }
 

@@ -52,11 +52,9 @@ async fn get_file_from_http(url: &str, config: &Config) -> Result<Vec<u8>> {
     }
 
     match response.status() {
-        reqwest::StatusCode::NOT_FOUND => Err(Error::NotFound),
-        reqwest::StatusCode::FORBIDDEN => Err(Error::NotFound),
+        reqwest::StatusCode::NOT_FOUND | reqwest::StatusCode::FORBIDDEN => Err(Error::NotFound),
         code => Err(Error::Io(format!(
-            "unexpected response from HTTP backend: {}",
-            code
+            "unexpected response from HTTP backend: {code}"
         ))),
     }
 }
@@ -67,7 +65,7 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
     }
     if let Some(s3config) = &config.s3 {
         let url = if let Some(endpoint) = &s3config.endpoint {
-            format!("{}{}", endpoint, path)
+            format!("{endpoint}{path}")
         } else {
             format!(
                 "http://{}.s3.{}.amazonaws.com{}",
@@ -90,11 +88,9 @@ async fn get_file_from_s3(bucket: &str, path: &str, config: &Config) -> Result<V
         }
 
         return match response.status() {
-            reqwest::StatusCode::NOT_FOUND => Err(Error::NotFound),
-            reqwest::StatusCode::FORBIDDEN => Err(Error::NotFound),
+            reqwest::StatusCode::NOT_FOUND | reqwest::StatusCode::FORBIDDEN => Err(Error::NotFound),
             code => Err(Error::Io(format!(
-                "unexpected response from S3 backend: {}",
-                code
+                "unexpected response from S3 backend: {code}"
             ))),
         };
     }
@@ -280,7 +276,7 @@ mod tests {
         assert!(result.is_err());
         match result.unwrap_err() {
             Error::NotFound => {}
-            other => panic!("expected NotFound error, got: {:?}", other),
+            other => panic!("expected NotFound error, got: {other:?}"),
         }
     }
 
@@ -290,7 +286,7 @@ mod tests {
         assert!(result.is_err());
         match result.unwrap_err() {
             Error::NotFound => {}
-            other => panic!("expected NotFound error, got: {:?}", other),
+            other => panic!("expected NotFound error, got: {other:?}"),
         }
     }
 
@@ -331,7 +327,7 @@ mod tests {
         for path in paths {
             match get_file_from_path(&root, path).await {
                 Err(Error::NotFound) => {}
-                other => panic!("expected NotFound error for {:?}, got: {:?}", path, other),
+                other => panic!("expected NotFound error for {path:?}, got: {other:?}"),
             }
         }
 
@@ -348,7 +344,7 @@ mod tests {
         let secret = base.join("secret.txt");
         match get_file_from_path(&root, secret.to_str().unwrap()).await {
             Err(Error::NotFound) => {}
-            other => panic!("expected NotFound error, got: {:?}", other),
+            other => panic!("expected NotFound error, got: {other:?}"),
         }
 
         tokio::fs::remove_dir_all(&base).await.ok();
@@ -371,7 +367,7 @@ mod tests {
         for path in ["link.txt", "outside/secret.txt"] {
             match get_file_from_path(&root, path).await {
                 Err(Error::NotFound) => {}
-                other => panic!("expected NotFound error for {:?}, got: {:?}", path, other),
+                other => panic!("expected NotFound error for {path:?}, got: {other:?}"),
             }
         }
 
@@ -421,7 +417,7 @@ mod tests {
         assert!(result.is_err());
         match result.unwrap_err() {
             Error::NotFound => {}
-            other => panic!("expected NotFound error, got: {:?}", other),
+            other => panic!("expected NotFound error, got: {other:?}"),
         }
     }
 
@@ -443,7 +439,7 @@ mod tests {
         assert!(result.is_err());
         match result.unwrap_err() {
             Error::NotFound => {} // 403 is treated as NotFound
-            other => panic!("expected NotFound error, got: {:?}", other),
+            other => panic!("expected NotFound error, got: {other:?}"),
         }
     }
 
@@ -465,7 +461,7 @@ mod tests {
         assert!(result.is_err());
         match result.unwrap_err() {
             Error::Io(_) => {} // Other HTTP errors become Io errors
-            other => panic!("expected Io error, got: {:?}", other),
+            other => panic!("expected Io error, got: {other:?}"),
         }
     }
 
@@ -499,7 +495,7 @@ mod tests {
         for path in ["../secret.txt", "..\\secret.txt", "%2e%2e/secret.txt"] {
             match get_file_from_backend(&endpoint, path, &config).await {
                 Err(Error::NotFound) => {}
-                other => panic!("expected NotFound error for {:?}, got: {:?}", path, other),
+                other => panic!("expected NotFound error for {path:?}, got: {other:?}"),
             }
         }
 
@@ -512,7 +508,7 @@ mod tests {
         let result = get_file_from_backend("file://example.com/files/", "file.jpg", &config).await;
         match result {
             Err(Error::InvalidBackend) => {}
-            other => panic!("expected InvalidBackend error, got: {:?}", other),
+            other => panic!("expected InvalidBackend error, got: {other:?}"),
         }
     }
 
@@ -523,7 +519,7 @@ mod tests {
         assert!(result.is_err());
         match result.unwrap_err() {
             Error::InvalidBackend => {}
-            other => panic!("expected InvalidBackend error, got: {:?}", other),
+            other => panic!("expected InvalidBackend error, got: {other:?}"),
         }
     }
 
@@ -585,7 +581,7 @@ mod tests {
         assert!(result.is_err());
         match result.unwrap_err() {
             Error::InvalidBackend => {} // Expected when S3 config is missing
-            other => panic!("expected InvalidBackend error, got: {:?}", other),
+            other => panic!("expected InvalidBackend error, got: {other:?}"),
         }
     }
 
@@ -596,7 +592,7 @@ mod tests {
 
         match converted_error {
             Error::NotFound => {}
-            other => panic!("expected NotFound error, got: {:?}", other),
+            other => panic!("expected NotFound error, got: {other:?}"),
         }
 
         let permission_error =
@@ -605,7 +601,7 @@ mod tests {
 
         match converted_error {
             Error::Io(_) => {}
-            other => panic!("expected Io error, got: {:?}", other),
+            other => panic!("expected Io error, got: {other:?}"),
         }
     }
 }

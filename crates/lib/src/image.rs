@@ -159,8 +159,8 @@ pub fn process_image(
 
     // Check maximum megapixels limit
     if let Some(max_megapixels) = config.max_megapixels {
-        let width = image.get_width() as f64;
-        let height = image.get_height() as f64;
+        let width = f64::from(image.get_width());
+        let height = f64::from(image.get_height());
         let megapixels = (width * height) / 1_000_000.0;
 
         if megapixels > max_megapixels {
@@ -210,8 +210,8 @@ pub fn process_image(
 
         // Check maximum output resolution limit before resizing
         if let Some(max_resolution) = config.max_output_resolution {
-            let output_width = options.width.unwrap_or(image_width) as u32;
-            let output_height = options.height.unwrap_or(image_height) as u32;
+            let output_width = options.width.unwrap_or(image_width).cast_unsigned();
+            let output_height = options.height.unwrap_or(image_height).cast_unsigned();
             let max_dimension = output_width.max(output_height);
 
             if max_dimension > max_resolution {
@@ -428,12 +428,17 @@ fn tint(image: &VipsImage, colour: &options::Colour) -> VipsResult<VipsImage> {
     let mut lut_data = Vec::with_capacity(256 * 3);
 
     for i in 0..256 {
-        lut_data.push((i as f64 / 255.0) * 100.0); // Convert to LAB L range (0-100)
+        lut_data.push((f64::from(i) / 255.0) * 100.0); // Convert to LAB L range (0-100)
         lut_data.push(tint_lab_values[1]); // A from tint
         lut_data.push(tint_lab_values[2]); // B from tint
     }
 
     // Create lookup table image in LAB space
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "saturating to the 0-255 byte range is intended"
+    )]
     let lut_data: Vec<u8> = lut_data.iter().map(|&x| x.round() as u8).collect();
     let lut = VipsImage::new_from_memory(&lut_data, 256, 1, 3, ops::BandFormat::Uchar)?;
 
@@ -489,20 +494,30 @@ fn duotone(
     // Generate 256 values (0-255) mapping shadow to highlight colours
     let mut lut_data = Vec::with_capacity(256 * 3);
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "interpolating between two bytes stays within 0-255"
+    )]
     for i in 0..256 {
-        let t = i as f64 / 255.0; // Normalize to 0-1
+        let t = f64::from(i) / 255.0; // Normalize to 0-1
 
         // Interpolate between shadow and highlight colours
-        let r = (shadow_colour.r as f64 * (1.0 - t) + highlight_colour.r as f64 * t) as u8;
-        let g = (shadow_colour.g as f64 * (1.0 - t) + highlight_colour.g as f64 * t) as u8;
-        let b = (shadow_colour.b as f64 * (1.0 - t) + highlight_colour.b as f64 * t) as u8;
+        let r = (f64::from(shadow_colour.r) * (1.0 - t) + f64::from(highlight_colour.r) * t) as u8;
+        let g = (f64::from(shadow_colour.g) * (1.0 - t) + f64::from(highlight_colour.g) * t) as u8;
+        let b = (f64::from(shadow_colour.b) * (1.0 - t) + f64::from(highlight_colour.b) * t) as u8;
 
-        lut_data.push(r as f64);
-        lut_data.push(g as f64);
-        lut_data.push(b as f64);
+        lut_data.push(f64::from(r));
+        lut_data.push(f64::from(g));
+        lut_data.push(f64::from(b));
     }
 
     // Create the lookup table image
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "values were already clamped to bytes above"
+    )]
     let lut_bytes: Vec<u8> = lut_data.iter().map(|&x| x as u8).collect();
     let lut = VipsImage::new_from_memory(&lut_bytes, 256, 1, 3, ops::BandFormat::Uchar)?;
 
@@ -567,7 +582,7 @@ mod tests {
         // Ensure VipsApp is initialized
         let _vips = crate::create_vips_app();
 
-        let expected = format!("tests/results/{}", path);
+        let expected = format!("tests/results/{path}");
         let img_result = VipsImage::new_from_buffer(buffer, "").expect("unable to read image");
         let img_expected = VipsImage::new_from_file(&expected).expect("unable to read image");
 
@@ -576,9 +591,7 @@ mod tests {
 
         assert!(
             (avg_result - avg_expected).abs() < 1.0,
-            "average pixel values differ: result={} expected={}",
-            avg_result,
-            avg_expected
+            "average pixel values differ: result={avg_result} expected={avg_expected}"
         );
     }
 

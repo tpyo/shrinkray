@@ -97,7 +97,7 @@ mod tests {
                     err,
                     VipsError::OperationError("test operation failed")
                 ));
-                assert!(buffer.is_empty());
+                assert_eq!(buffer, "");
             }
             _ => panic!("expected Error::Vips variant"),
         }

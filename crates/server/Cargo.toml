@@ -57,3 +57,7 @@ axum-test = "21.0.0"
 mockito = "1.7.2"
 regex = "1.12.3"
 tracing-test = "0.2.6"
+
+[lints]
+workspace = true
+
