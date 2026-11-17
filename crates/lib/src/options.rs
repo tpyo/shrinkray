@@ -204,10 +204,12 @@ impl Default for ImageOptions {
 }
 
 impl ImageOptions {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn any_set(&self) -> bool {
         self.signature.is_some()
             || self.background.is_some()
@@ -229,7 +231,7 @@ impl ImageOptions {
             || self.tint.is_some()
             || self.width.is_some()
             || self.height.is_some()
-            || (self.device_pixel_ratio.is_some() && self.device_pixel_ratio.unwrap() != 1)
+            || self.device_pixel_ratio.is_some_and(|dpr| dpr != 1)
             || self.rotate.is_some()
             || self.fit.is_some()
             || self.format.is_some()
@@ -237,6 +239,7 @@ impl ImageOptions {
     }
 
     /// Calculate the resize scale based on the image dimensions and the specified width and height.
+    #[must_use]
     pub fn get_resize_scale(&self, image_width: i32, image_height: i32) -> f64 {
         if let Some(width) = self.width {
             let scale_x = f64::from(width) / f64::from(image_width);
@@ -252,6 +255,7 @@ impl ImageOptions {
         }
     }
 
+    #[must_use]
     pub fn query_str(&self) -> String {
         let mut params: BTreeMap<String, String> = BTreeMap::new();
 
@@ -266,7 +270,7 @@ impl ImageOptions {
             params.insert("ar".into(), ar.to_string());
         }
         if let Some(download) = &self.download {
-            params.insert("dl".into(), download.to_string());
+            params.insert("dl".into(), download.clone());
         }
         if let Some(trim) = &self.trim {
             params.insert("trim".into(), trim.to_string());
@@ -301,10 +305,7 @@ impl ImageOptions {
         if let Some(duotone) = &self.duotone {
             let shadow_hex: String = (&duotone.shadow).into();
             let highlight_hex: String = (&duotone.highlight).into();
-            params.insert(
-                "duotone".into(),
-                format!("{},{}", shadow_hex, highlight_hex),
-            );
+            params.insert("duotone".into(), format!("{shadow_hex},{highlight_hex}"));
         }
         if let Some(duotone_alpha) = &self.duotone_alpha {
             params.insert("duotone-alpha".into(), duotone_alpha.0.to_string());
@@ -337,7 +338,7 @@ impl ImageOptions {
         // Create the query string
         params
             .iter()
-            .map(|(k, v)| format!("{}={}", k, v))
+            .map(|(k, v)| format!("{k}={v}"))
             .collect::<Vec<_>>()
             .join("&")
     }
@@ -350,12 +351,14 @@ impl ImageOptions {
     ///
     /// `path` is the path of the request URI exactly as it appears in the URL
     /// with its leading slash and without the query string (e.g. `/images/photo.jpg`).
+    #[must_use]
     pub fn sign(&self, secret: &str, path: &str) -> std::string::String {
         let key = hmac::Key::new(hmac::HMAC_SHA256, secret.as_bytes());
         hex::encode(hmac::sign(&key, self.signing_payload(path).as_bytes()).as_ref())
     }
 
     /// Verify the `sig` parameter against the options and the request path.
+    #[must_use]
     pub fn verify_signature(&self, signing_secret: &str, path: &str) -> bool {
         if let Some(ref sig_hex) = self.signature
             && let Ok(sig_bytes) = hex::decode(sig_hex)
@@ -379,10 +382,7 @@ impl Percentage {
     /// Returns an error if the value is not between 1 and 100
     pub fn new(value: u8) -> Result<Self, String> {
         if !(1..=100).contains(&value) {
-            return Err(format!(
-                "percentage must be between 1 and 100, got {}",
-                value
-            ));
+            return Err(format!("percentage must be between 1 and 100, got {value}"));
         }
         Ok(Self(value))
     }
@@ -409,7 +409,7 @@ where
     match String::deserialize(deserializer) {
         Ok(value) => {
             let percentage = value.parse::<u8>().map_err(|err| {
-                serde::de::Error::custom(format!("failed to parse percentage: {}", err))
+                serde::de::Error::custom(format!("failed to parse percentage: {err}"))
             })?;
             Percentage::new(percentage)
                 .map(Some)
@@ -431,8 +431,7 @@ impl Rotation {
     pub fn new(value: u16) -> Result<Self, String> {
         if value != 90 && value != 180 && value != 270 {
             return Err(format!(
-                "rotation must be one of 90, 180, or 270, got {}",
-                value
+                "rotation must be one of 90, 180, or 270, got {value}"
             ));
         }
         Ok(Self(value))
@@ -486,15 +485,16 @@ impl Colour {
             ));
         }
         let r = u8::from_str_radix(&hex[0..2], 16)
-            .map_err(|e| format!("invalid hex format for red channel: {}", e))?;
+            .map_err(|e| format!("invalid hex format for red channel: {e}"))?;
         let g = u8::from_str_radix(&hex[2..4], 16)
-            .map_err(|e| format!("invalid hex format for green channel: {}", e))?;
+            .map_err(|e| format!("invalid hex format for green channel: {e}"))?;
         let b = u8::from_str_radix(&hex[4..6], 16)
-            .map_err(|e| format!("invalid hex format for blue channel: {}", e))?;
+            .map_err(|e| format!("invalid hex format for blue channel: {e}"))?;
         Ok(Self { r, g, b })
     }
 
     /// Convert the colour to a hex string (e.g., "ff0000" for red)
+    #[must_use]
     pub fn to_hex(&self) -> String {
         format!("{:02x}{:02x}{:02x}", self.r, self.g, self.b)
     }
@@ -548,10 +548,10 @@ impl DuotoneColours {
             return Err("duotone must contain exactly two comma-separated hex colours".to_string());
         }
 
-        let shadow = Colour::from_hex(parts[0].trim())
-            .map_err(|e| format!("invalid shadow colour: {}", e))?;
+        let shadow =
+            Colour::from_hex(parts[0].trim()).map_err(|e| format!("invalid shadow colour: {e}"))?;
         let highlight = Colour::from_hex(parts[1].trim())
-            .map_err(|e| format!("invalid highlight colour: {}", e))?;
+            .map_err(|e| format!("invalid highlight colour: {e}"))?;
 
         Ok(Self { shadow, highlight })
     }
@@ -637,7 +637,7 @@ pub struct AspectRatio {
 }
 
 impl AspectRatio {
-    /// Create a new AspectRatio
+    /// Create a new `AspectRatio`
     ///
     /// # Errors
     ///

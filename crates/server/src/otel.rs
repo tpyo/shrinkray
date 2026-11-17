@@ -111,9 +111,9 @@ mod tests {
     }
 
     impl SpanExporter for MockSpanExporter {
-        async fn export(&self, batch: Vec<SpanData>) -> OTelSdkResult {
+        fn export(&self, batch: Vec<SpanData>) -> impl Future<Output = OTelSdkResult> {
             self.exported_spans.lock().unwrap().extend(batch);
-            Ok(())
+            std::future::ready(Ok(()))
         }
 
         fn shutdown(&self) -> OTelSdkResult {

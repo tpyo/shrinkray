@@ -14,7 +14,6 @@ path = "src/main.rs"
 [dependencies]
 shrinkray = { path = "../lib" }
 
-async-trait = "0.1.89"
 aws-sign-v4 = "0.3.0"
 axum = { version = "0.8.9", default-features = false, features = [
     "tokio",
@@ -42,7 +41,6 @@ reqwest = { version = "0.12.28", default-features = false, features = [
 ] }
 rexif = "0.7.5"
 ring = "0.17.14"
-rstest = "0.28.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 strum = { version = "0.28.0", features = ["derive"] }
@@ -59,3 +57,7 @@ axum-test = "21.0.0"
 mockito = "1.7.2"
 regex = "1.12.3"
 tracing-test = "0.2.6"
+
+[lints]
+workspace = true
+

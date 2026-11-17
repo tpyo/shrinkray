@@ -10,6 +10,11 @@ use options::{
     AspectRatio, Colour, DuotoneColours, Fit, Format, ImageOptions, Percentage, Rotation, Trim,
 };
 
+/// Returns the process-wide libvips instance, initialising it on first use.
+///
+/// # Panics
+///
+/// Panics if libvips fails to initialise.
 pub fn create_vips_app() -> &'static VipsApp {
     // libvips requires global initialization and assumes there is only
     // one global VipsApp per process. Creating multiple instances of
@@ -32,21 +37,25 @@ pub struct ProcessedImage {
 
 impl ProcessedImage {
     /// Get the processed image bytes
+    #[must_use]
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
     /// Consume and return the image bytes
+    #[must_use]
     pub fn into_bytes(self) -> Vec<u8> {
         self.bytes
     }
 
     /// Get the format of the processed image
+    #[must_use]
     pub fn format(&self) -> Format {
         self.format
     }
 
     /// Get the MIME type string for the processed image
+    #[must_use]
     pub fn mime_type(&self) -> &'static str {
         self.format.content_type()
     }
@@ -82,7 +91,8 @@ pub struct ImageProcessor<'a> {
 }
 
 impl<'a> ImageProcessor<'a> {
-    /// Create a new ImageProcessor with the given image bytes
+    /// Create a new `ImageProcessor` with the given image bytes
+    #[must_use]
     pub fn new(bytes: &'a [u8]) -> Self {
         Self {
             bytes,
@@ -92,18 +102,21 @@ impl<'a> ImageProcessor<'a> {
     }
 
     /// Set the output width in pixels
+    #[must_use]
     pub fn width(mut self, width: i32) -> Self {
         self.options.width = Some(width);
         self
     }
 
     /// Set the output height in pixels
+    #[must_use]
     pub fn height(mut self, height: i32) -> Self {
         self.options.height = Some(height);
         self
     }
 
     /// Set both width and height in one call
+    #[must_use]
     pub fn resize(mut self, width: i32, height: i32) -> Self {
         self.options.width = Some(width);
         self.options.height = Some(height);
@@ -111,6 +124,7 @@ impl<'a> ImageProcessor<'a> {
     }
 
     /// Create a thumbnail with the given size
+    #[must_use]
     pub fn thumbnail(mut self, size: i32) -> Self {
         self.options.width = Some(size);
         self.options.height = Some(size);
@@ -119,72 +133,84 @@ impl<'a> ImageProcessor<'a> {
     }
 
     /// Set the output quality (1-100)
+    #[must_use]
     pub fn quality(mut self, quality: i32) -> Self {
         self.options.quality = Some(quality);
         self
     }
 
     /// Set the output format
+    #[must_use]
     pub fn format(mut self, format: Format) -> Self {
         self.options.format = Some(format);
         self
     }
 
     /// Set the fit mode for resizing
+    #[must_use]
     pub fn fit(mut self, fit: Fit) -> Self {
         self.options.fit = Some(fit);
         self
     }
 
     /// Set the device pixel ratio
+    #[must_use]
     pub fn device_pixel_ratio(mut self, dpr: i32) -> Self {
         self.options.device_pixel_ratio = Some(dpr);
         self
     }
 
     /// Set the aspect ratio (e.g., 16, 9 for 16:9)
+    #[must_use]
     pub fn aspect_ratio(mut self, x: i32, y: i32) -> Self {
         self.options.aspect_ratio = Some(AspectRatio::from_dimensions(x, y));
         self
     }
 
     /// Set the background colour for flattening transparent images
+    #[must_use]
     pub fn background(mut self, r: u8, g: u8, b: u8) -> Self {
         self.options.background = Some(Colour { r, g, b });
         self
     }
 
     /// Set the background colour using a Colour type
+    #[must_use]
     pub fn with_background(mut self, colour: Colour) -> Self {
         self.options.background = Some(colour);
         self
     }
 
     /// Rotate the image by the specified angle (90, 180, or 270 degrees)
+    #[must_use]
     pub fn rotate(mut self, angle: u16) -> Self {
         self.options.rotate = Some(Rotation(angle));
         self
     }
 
     /// Set rotation using a Rotation type
+    #[must_use]
     pub fn with_rotation(mut self, rotation: Rotation) -> Self {
         self.options.rotate = Some(rotation);
         self
     }
 
     /// Enable lossless compression
+    #[must_use]
     pub fn lossless(mut self, lossless: bool) -> Self {
         self.options.lossless = Some(lossless);
         self
     }
 
     /// Enable automatic trimming of whitespace/transparent borders
+    #[must_use]
     pub fn trim(mut self) -> Self {
         self.options.trim = Some(Trim::Auto);
         self
     }
 
     /// Trim borders matching the specified colour
+    #[must_use]
     pub fn trim_colour(mut self, r: u8, g: u8, b: u8) -> Self {
         self.options.trim = Some(Trim::Colour);
         self.options.trim_colour = Some(Colour { r, g, b });
@@ -192,71 +218,83 @@ impl<'a> ImageProcessor<'a> {
     }
 
     /// Apply sharpening (1-100, where higher values mean more sharpening)
+    #[must_use]
     pub fn sharpen(mut self, amount: u8) -> Self {
         self.options.sharpen = Some(Percentage(amount));
         self
     }
 
     /// Apply blur (1-100, where higher values mean more blur)
+    #[must_use]
     pub fn blur(mut self, amount: u8) -> Self {
         self.options.blur = Some(Percentage(amount));
         self
     }
 
     /// Apply kodachrome filter (1-100 for intensity)
+    #[must_use]
     pub fn kodachrome(mut self, intensity: u8) -> Self {
         self.options.kodachrome = Some(Percentage(intensity));
         self
     }
 
     /// Apply technicolor filter (1-100 for intensity)
+    #[must_use]
     pub fn technicolor(mut self, intensity: u8) -> Self {
         self.options.technicolor = Some(Percentage(intensity));
         self
     }
 
     /// Apply vintage filter (1-100 for intensity)
+    #[must_use]
     pub fn vintage(mut self, intensity: u8) -> Self {
         self.options.vintage = Some(Percentage(intensity));
         self
     }
 
     /// Apply polaroid filter (1-100 for intensity)
+    #[must_use]
     pub fn polaroid(mut self, intensity: u8) -> Self {
         self.options.polaroid = Some(Percentage(intensity));
         self
     }
 
     /// Apply sepia filter (1-100 for intensity)
+    #[must_use]
     pub fn sepia(mut self, intensity: u8) -> Self {
         self.options.sepia = Some(Percentage(intensity));
         self
     }
 
     /// Apply monochrome/grayscale filter (1-100 for intensity)
+    #[must_use]
     pub fn monochrome(mut self, intensity: u8) -> Self {
         self.options.monochrome = Some(Percentage(intensity));
         self
     }
 
     /// Shorthand for monochrome filter
+    #[must_use]
     pub fn grayscale(self) -> Self {
         self.monochrome(100)
     }
 
     /// Apply tint with the specified colour
+    #[must_use]
     pub fn tint(mut self, r: u8, g: u8, b: u8) -> Self {
         self.options.tint = Some(Colour { r, g, b });
         self
     }
 
     /// Apply tint using a validated Colour type
+    #[must_use]
     pub fn with_tint(mut self, colour: Colour) -> Self {
         self.options.tint = Some(colour);
         self
     }
 
     /// Apply duotone effect with shadow and highlight colours
+    #[must_use]
     pub fn duotone(
         mut self,
         shadow_r: u8,
@@ -281,25 +319,29 @@ impl<'a> ImageProcessor<'a> {
         self
     }
 
-    /// Apply duotone effect using validated DuotoneColours type
+    /// Apply duotone effect using validated `DuotoneColours` type
+    #[must_use]
     pub fn with_duotone(mut self, duotone: DuotoneColours) -> Self {
         self.options.duotone = Some(duotone);
         self
     }
 
     /// Set the opacity/alpha for the duotone effect (1-100)
+    #[must_use]
     pub fn duotone_alpha(mut self, alpha: u8) -> Self {
         self.options.duotone_alpha = Some(Percentage(alpha));
         self
     }
 
     /// Set the maximum megapixels allowed for input images
+    #[must_use]
     pub fn max_megapixels(mut self, megapixels: f64) -> Self {
         self.config.max_megapixels = Some(megapixels);
         self
     }
 
     /// Set the maximum resolution (largest dimension) allowed for output images
+    #[must_use]
     pub fn max_output_resolution(mut self, resolution: u32) -> Self {
         self.config.max_output_resolution = Some(resolution);
         self
@@ -307,9 +349,9 @@ impl<'a> ImageProcessor<'a> {
 
     /// Process the image with the configured options
     ///
-    /// This method initializes the VipsApp (if not already initialized),
+    /// This method initializes the `VipsApp` (if not already initialized),
     /// processes the image according to the configured options, and returns
-    /// a ProcessedImage containing the output bytes and metadata.
+    /// a `ProcessedImage` containing the output bytes and metadata.
     pub fn process(mut self) -> VipsResult<ProcessedImage> {
         // Ensure VipsApp is initialized
         let _vips = create_vips_app();
@@ -329,22 +371,24 @@ impl<'a> ImageProcessor<'a> {
         })
     }
 
-    /// Get a reference to the underlying ImageOptions
+    /// Get a reference to the underlying `ImageOptions`
+    #[must_use]
     pub fn options(&self) -> &ImageOptions {
         &self.options
     }
 
-    /// Get a mutable reference to the underlying ImageOptions
+    /// Get a mutable reference to the underlying `ImageOptions`
     pub fn options_mut(&mut self) -> &mut ImageOptions {
         &mut self.options
     }
 
-    /// Get a reference to the underlying ImageConfig
+    /// Get a reference to the underlying `ImageConfig`
+    #[must_use]
     pub fn config(&self) -> &ImageConfig {
         &self.config
     }
 
-    /// Get a mutable reference to the underlying ImageConfig
+    /// Get a mutable reference to the underlying `ImageConfig`
     pub fn config_mut(&mut self) -> &mut ImageConfig {
         &mut self.config
     }
@@ -363,7 +407,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
         assert_eq!(result.format(), Format::Jpeg);
         assert_eq!(result.mime_type(), "image/jpeg");
     }
@@ -375,7 +419,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -387,7 +431,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -397,7 +441,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -408,7 +452,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -418,7 +462,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -428,7 +472,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -443,7 +487,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
         assert_eq!(result.format(), Format::Jpeg);
     }
 
@@ -455,7 +499,7 @@ mod tests {
             .expect("unable to process image");
 
         let bytes = result.into_bytes();
-        assert!(!bytes.is_empty());
+        assert_ne!(bytes.len(), 0);
     }
 
     #[test]
@@ -477,7 +521,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -488,7 +532,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -499,7 +543,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -514,7 +558,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -525,7 +569,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -536,7 +580,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -546,7 +590,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -556,7 +600,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -566,7 +610,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -576,7 +620,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -586,7 +630,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -596,7 +640,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -606,7 +650,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -621,7 +665,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -643,7 +687,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -654,7 +698,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
@@ -665,7 +709,7 @@ mod tests {
             .process()
             .expect("unable to process image");
 
-        assert!(!result.bytes().is_empty());
+        assert_ne!(result.bytes().len(), 0);
     }
 
     #[test]
