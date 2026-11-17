@@ -14,7 +14,6 @@ path = "src/main.rs"
 [dependencies]
 shrinkray = { path = "../lib" }
 
-async-trait = "0.1.89"
 aws-sign-v4 = "0.3.0"
 axum = { version = "0.8.9", default-features = false, features = [
     "tokio",

@@ -2156,7 +2156,6 @@ dependencies = [
 name = "shrinkray-server"
 version = "1.2.0"
 dependencies = [
- "async-trait",
  "aws-sign-v4",
  "axum",
  "axum-extra",
