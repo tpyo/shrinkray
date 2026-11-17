@@ -2147,6 +2147,7 @@ dependencies = [
  "ring",
  "rstest",
  "serde",
+ "serde_json",
  "strum",
  "tracing",
 ]
